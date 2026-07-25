@@ -1,2 +1,5 @@
+node_modules/
 example_data/
 .DS_Store
+.expo/
+dist/

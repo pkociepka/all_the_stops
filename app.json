@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "All The Stops",
+    "slug": "all-the-stops",
+    "version": "0.1.0",
+    "scheme": "allthestops",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.pkociepka.allthestops"
+    },
+    "android": {
+      "package": "com.pkociepka.allthestops",
+      "adaptiveIcon": {
+        "backgroundColor": "#1A56C4",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-sqlite",
+        {
+          "enableFTS": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
