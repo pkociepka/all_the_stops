@@ -49,6 +49,7 @@ export async function initDatabase(db: SQLiteDatabase): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS trips_feed_idx ON trips(feed_id);
     CREATE INDEX IF NOT EXISTS trips_route_idx ON trips(feed_id, route_id);
+    CREATE INDEX IF NOT EXISTS trips_service_idx ON trips(feed_id, service_id);
 
     CREATE TABLE IF NOT EXISTS stop_times (
       feed_id INTEGER NOT NULL REFERENCES feeds(id) ON DELETE CASCADE,

@@ -3,3 +3,5 @@ example_data/
 .DS_Store
 .expo/
 dist/
+
+expo-env.d.ts
