@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>All The Stops — UI Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  background: linear-gradient(155deg, #090817 0%, #121030 55%, #1A1245 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 20px 56px;
+  gap: 22px;
+}
+
+.page-label {
+  color: rgba(255,255,255,0.38);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+/* ── Design tokens ── */
+:root {
+  --brand:        #1A56C4;
+  --brand-dim:    #E6EFFC;
+  --brand-text:   #0D3A8C;
+
+  --bg:           #EDECE9;
+  --surface:      #FFFFFF;
+  --surface-2:    #F5F4F1;
+  --surface-3:    #EDECE9;
+
+  --text:         #131118;
+  --text-2:       #524E60;
+  --text-3:       #938FA6;
+
+  --border:       #DFDCE8;
+  --border-2:     #ECEAF2;
+
+  --warn:         #A85E00;
+  --warn-bg:      #FFF3DC;
+  --warn-border:  #E8C060;
+  --ok:           #1A6E38;
+  --ok-bg:        #E6F4EC;
+  --err:          #BE1E28;
+  --err-bg:       #FCE8EA;
+
+  --l1:  #C5202A;
+  --l2:  #1450B0;
+  --l3:  #1E7835;
+  --l4:  #D05C08;
+  --l6:  #6A2C9E;
+  --l8:  #0A7265;
+  --l17: #1E7835;
+  --lbus:#4A5C68;
+
+  --radius:    16px;
+  --radius-sm: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand:       #4E80F0;
+    --brand-dim:   #172040;
+    --brand-text:  #88AAFC;
+    --bg:          #0D0C18;
+    --surface:     #191728;
+    --surface-2:   #201E30;
+    --surface-3:   #252338;
+    --text:        #EEEDF8;
+    --text-2:      #9490A6;
+    --text-3:      #524E62;
+    --border:      #282640;
+    --border-2:    #201E30;
+    --warn:        #D0900A;
+    --warn-bg:     #221600;
+    --warn-border: #705000;
+    --ok:          #3AA860;
+    --ok-bg:       #081E10;
+    --err:         #E04050;
+    --err-bg:      #250C10;
+  }
+}
+:root[data-theme="dark"] {
+  --brand:       #4E80F0;
+  --brand-dim:   #172040;
+  --brand-text:  #88AAFC;
+  --bg:          #0D0C18;
+  --surface:     #191728;
+  --surface-2:   #201E30;
+  --surface-3:   #252338;
+  --text:        #EEEDF8;
+  --text-2:      #9490A6;
+  --text-3:      #524E62;
+  --border:      #282640;
+  --border-2:    #201E30;
+  --warn:        #D0900A;
+  --warn-bg:     #221600;
+  --warn-border: #705000;
+  --ok:          #3AA860;
+  --ok-bg:       #081E10;
+  --err:         #E04050;
+  --err-bg:      #250C10;
+}
+:root[data-theme="light"] {
+  --brand:        #1A56C4;
+  --brand-dim:    #E6EFFC;
+  --brand-text:   #0D3A8C;
+  --bg:           #EDECE9;
+  --surface:      #FFFFFF;
+  --surface-2:    #F5F4F1;
+  --surface-3:    #EDECE9;
+  --text:         #131118;
+  --text-2:       #524E60;
+  --text-3:       #938FA6;
+  --border:       #DFDCE8;
+  --border-2:     #ECEAF2;
+  --warn:         #A85E00;
+  --warn-bg:      #FFF3DC;
+  --warn-border:  #E8C060;
+  --ok:           #1A6E38;
+  --ok-bg:        #E6F4EC;
+  --err:          #BE1E28;
+  --err-bg:       #FCE8EA;
+}
+
+/* ── Phone frame ── */
+.phone {
+  width: 390px;
+  height: 790px;
+  background: var(--bg);
+  border-radius: 50px;
+  box-shadow:
+    0 0 0 10px #1C1A28,
+    0 0 0 12px #2C2A40,
+    0 60px 120px rgba(0,0,0,0.75);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.status-bar {
+  height: 50px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px 0 32px;
+  flex-shrink: 0;
+  border-bottom: 0.5px solid var(--border);
+  position: relative;
+  z-index: 20;
+}
+.status-time  { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; color: var(--text); }
+.status-icons { font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 5px; }
+
+.screen-area { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; scrollbar-width: none; }
+.screen-area::-webkit-scrollbar { display: none; }
+
+.bottom-nav {
+  height: 86px;
+  background: var(--surface);
+  border-top: 0.5px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+  flex-shrink: 0;
+  z-index: 20;
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 0;
+  cursor: pointer;
+  color: var(--text-3);
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+}
+.nav-item.active { color: var(--brand); }
+.nav-label { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
+
+.screen { display: none; min-height: 100%; background: var(--bg); }
+.screen.active { display: block; }
+
+/* ── Shared components ── */
+.screen-header {
+  background: var(--surface);
+  padding: 14px 20px;
+  border-bottom: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.screen-title { font-size: 17px; font-weight: 700; color: var(--text); flex: 1; }
+.screen-step  { font-size: 12px; color: var(--text-3); font-weight: 700; }
+
+.ico { display: block; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.back-btn { color: var(--brand); cursor: pointer; display: inline-flex; align-items: center; }
+
+.sec-label {
+  font-size: 11px; font-weight: 700; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 16px 20px 8px;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  margin: 0 14px 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px var(--border);
+  overflow: hidden;
+}
+
+.info-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 0.5px solid var(--border-2);
+}
+.info-row:last-child { border-bottom: none; }
+.info-icon {
+  width: 34px; height: 34px;
+  background: var(--brand-dim); border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--brand); flex-shrink: 0;
+}
+.info-label { font-size: 11px; color: var(--text-3); margin-bottom: 1px; }
+.info-value { font-size: 15px; color: var(--text); font-weight: 700; }
+.info-value-sm { font-size: 13px; color: var(--text-2); }
+
+.btn {
+  border: none; cursor: pointer; font-family: inherit; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 12px;
+  transition: opacity 0.1s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { opacity: 0.8; transform: scale(0.97); }
+.btn-sm   { padding: 7px 14px; font-size: 13px; border-radius: 9px; }
+.btn-md   { padding: 11px 22px; font-size: 15px; }
+.btn-full { width: 100%; padding: 15px; font-size: 16px; border-radius: 14px; }
+.btn-primary   { background: var(--brand); color: #fff; }
+.btn-secondary { background: var(--surface-2); color: var(--text); }
+.btn-outline   { background: transparent; border: 1.5px solid var(--brand); color: var(--brand); }
+.btn-ok        { background: var(--ok-bg); color: var(--ok); }
+.btn-err       { background: var(--err); color: #fff; }
+.btn-ghost     { background: var(--surface-2); color: var(--text-2); border-radius: 9px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 700; padding: 3px 9px;
+  border-radius: 20px; letter-spacing: 0.2px;
+}
+.chip-blue { background: var(--brand-dim); color: var(--brand-text); }
+.chip-ok   { background: var(--ok-bg);     color: var(--ok); }
+.chip-warn { background: var(--warn-bg);   color: var(--warn); }
+.chip-err  { background: var(--err-bg);    color: var(--err); }
+.chip-gray { background: var(--surface-2); color: var(--text-2); }
+
+.action-bar {
+  position: sticky; bottom: 0;
+  background: var(--surface);
+  border-top: 0.5px solid var(--border);
+  padding: 12px 16px;
+}
+
+/* Toggle rows */
+.toggle-row {
+  display: flex; align-items: center;
+  padding: 13px 16px;
+  border-bottom: 0.5px solid var(--border-2);
+  gap: 12px;
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label { flex: 1; }
+.tl-name  { font-size: 15px; color: var(--text); }
+.tl-sub   { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+.toggle {
+  width: 48px; height: 28px;
+  background: var(--border); border-radius: 14px;
+  position: relative; cursor: pointer; flex-shrink: 0;
+  transition: background 0.2s;
+}
+.toggle.on { background: var(--brand); }
+.toggle::after {
+  content: ''; position: absolute;
+  width: 22px; height: 22px; background: #fff;
+  border-radius: 50%; top: 3px; left: 3px;
+  transition: left 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle.on::after { left: 23px; }
+
+/* Stepper */
+.stepper {
+  display: flex; align-items: center;
+  background: var(--surface-2); border-radius: 10px; overflow: hidden;
+}
+.stepper-btn {
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700; color: var(--brand);
+  cursor: pointer; border: none; background: transparent; font-family: inherit;
+}
+.stepper-val {
+  flex: 1; text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 15px; font-weight: 700; color: var(--text);
+}
+
+/* Segment control */
+.seg-ctrl {
+  display: flex; background: var(--surface-2);
+  border-radius: 10px; padding: 3px; gap: 2px;
+}
+.seg-opt {
+  flex: 1; padding: 8px 4px; border-radius: 8px;
+  text-align: center; font-size: 13px; font-weight: 700;
+  color: var(--text-3); cursor: pointer; transition: all 0.15s;
+}
+.seg-opt.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+/* Line badges */
+.line-badge {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.line-badge.lg { width: 52px; height: 52px; font-size: 20px; }
+.l1  { background: var(--l1);  }
+.l2  { background: var(--l2);  }
+.l3  { background: var(--l3);  }
+.l4  { background: var(--l4);  }
+.l6  { background: var(--l6);  }
+.l8  { background: var(--l8);  }
+.l17 { background: var(--l17); }
+.lbus { background: var(--lbus); font-size: 10px; }
+
+/* Timeline bar */
+.tl-bar {
+  display: flex; height: 10px; gap: 2px;
+  align-items: center;
+}
+.tl-seg      { height: 10px; border-radius: 4px; flex-shrink: 0; }
+.tl-walk-seg {
+  height: 6px; border-radius: 3px; flex-shrink: 0;
+  background: repeating-linear-gradient(90deg, var(--text-3) 0, var(--text-3) 3px, transparent 3px, transparent 7px);
+}
+.tl-dot {
+  width: 8px; height: 8px;
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: 50%; flex-shrink: 0; z-index: 1;
+}
+.tl-times {
+  display: flex; justify-content: space-between;
+  padding-top: 5px;
+}
+.tl-time { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-3); }
+.tl-stops { display: flex; justify-content: space-between; padding-top: 3px; }
+.tl-stop { font-size: 10px; color: var(--text-2); font-weight: 700; max-width: 90px; }
+.tl-stop:last-child { text-align: right; }
+
+/* Step progress */
+.step-list { display: flex; flex-direction: column; padding: 8px 0; }
+.step-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 10px 20px; position: relative;
+}
+.step-item::before {
+  content: ''; position: absolute;
+  left: 31px; top: 38px;
+  width: 2px; height: calc(100% - 20px);
+  background: var(--border);
+}
+.step-item:last-child::before { display: none; }
+.step-dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px; font-size: 11px;
+}
+.step-dot.done    { background: var(--ok);     color: #fff; }
+.step-dot.active  { background: var(--brand);  color: #fff; }
+.step-dot.pending { background: var(--border); color: var(--text-3); }
+@keyframes pulse-step {
+  0%,100% { box-shadow: 0 0 0 0 rgba(78,128,240,0.45); }
+  50%      { box-shadow: 0 0 0 7px rgba(78,128,240,0); }
+}
+.step-dot.active { animation: pulse-step 1.5s ease-in-out infinite; }
+.step-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.step-sub   { font-size: 12px; color: var(--text-3); margin-top: 2px; line-height: 1.4; }
+.step-dot.done + div .step-title { color: var(--text-3); }
+
+/* Progress strip (companion) */
+.progress-strip {
+  background: var(--surface);
+  padding: 12px 20px;
+  border-bottom: 0.5px solid var(--border);
+}
+.progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+.progress-title { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.7px; }
+.progress-count { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--text); font-weight: 700; }
+.progress-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-fill  { height: 100%; background: var(--ok); border-radius: 3px; }
+
+/* Fork card */
+.fork-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  margin: 0 14px 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px var(--border);
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s;
+}
+.fork-card:active  { transform: scale(0.98); }
+.fork-card.best    { box-shadow: 0 2px 10px rgba(26,86,196,0.18), 0 0 0 1.5px var(--brand); }
+.fork-card-top     { padding: 14px 16px 8px; }
+.fork-row          { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 2px; }
+.fork-option-label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.7px; }
+.fork-badge        { font-size: 10px; font-weight: 700; background: var(--brand-dim); color: var(--brand-text); padding: 2px 7px; border-radius: 10px; }
+.fork-duration     { font-family: 'Space Mono', monospace; font-size: 24px; font-weight: 700; color: var(--text); line-height: 1.1; }
+.fork-route        { font-size: 13px; color: var(--text-2); margin-top: 4px; margin-bottom: 8px; }
+.fork-stats        { display: flex; gap: 14px; }
+.fork-stat         { font-size: 12px; color: var(--text-3); display: flex; align-items: center; gap: 4px; }
+.fork-tl           { padding: 10px 16px 14px; border-top: 0.5px solid var(--border-2); }
+.fork-tagline      { font-size: 13px; color: var(--text-2); padding: 0 16px 12px; line-height: 1.45; }
+.fork-note {
+  font-size: 12px; color: var(--warn);
+  background: var(--warn-bg);
+  padding: 10px 16px;
+  border-top: 0.5px solid var(--warn-border);
+  line-height: 1.5;
+}
+.fork-footer {
+  padding: 10px 16px;
+  border-top: 0.5px solid var(--border-2);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Leg list */
+.leg-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--border-2);
+}
+.leg-row:last-child { border-bottom: none; }
+.leg-times     { text-align: right; flex-shrink: 0; width: 50px; }
+.leg-time-dep  { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text); font-weight: 700; }
+.leg-time-arr  { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.leg-body      { flex: 1; }
+.leg-name      { font-size: 15px; font-weight: 700; color: var(--text); }
+.leg-sub       { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.leg-walk {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 13px;
+  border-bottom: 0.5px solid var(--border-2);
+}
+.leg-transfer {
+  padding: 8px 16px;
+  background: var(--brand-dim);
+  color: var(--brand-text);
+  font-size: 12px; font-weight: 700;
+  border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* Companion vehicle card */
+.vehicle-card {
+  margin: 12px 14px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 0 0 0.5px var(--border);
+  overflow: hidden;
+}
+.vehicle-stripe { height: 5px; }
+.vehicle-body   { padding: 16px; }
+.vehicle-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.vehicle-mode   { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.7px; font-weight: 700; }
+.vehicle-line   { font-size: 17px; font-weight: 700; color: var(--text); }
+.vehicle-dir    { font-size: 13px; color: var(--text-2); margin-top: 1px; }
+.vstop {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0;
+  border-top: 0.5px solid var(--border-2);
+}
+.vstop-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2.5px solid var(--text-3); flex-shrink: 0;
+}
+.vstop-dot.current { border-color: var(--brand); background: var(--brand); box-shadow: 0 0 0 3px var(--brand-dim); }
+.vstop-dot.next    { border-color: var(--text-2); }
+.vstop-name        { flex: 1; font-size: 14px; color: var(--text-2); }
+.vstop-name.current { font-size: 16px; font-weight: 700; color: var(--text); }
+.vstop-eta         { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text-3); }
+.vstop-eta.now     { color: var(--brand); font-weight: 700; }
+
+/* Transfer alert */
+.transfer-alert {
+  margin: 0 14px 12px;
+  background: var(--brand-dim);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex; align-items: flex-start; gap: 10px;
+  box-shadow: 0 0 0 0.5px var(--brand);
+}
+.ta-body   { flex: 1; }
+.ta-title  { font-size: 13px; font-weight: 700; color: var(--brand-text); }
+.ta-sub    { font-size: 12px; color: var(--brand); margin-top: 2px; }
+
+/* Companion action buttons */
+.comp-actions {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px; padding: 0 14px 14px;
+}
+.comp-btn {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 12px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  cursor: pointer; border: none; font-family: inherit;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px var(--border);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s;
+}
+.comp-btn:active { transform: scale(0.95); }
+.comp-btn-icon  { color: var(--brand); }
+.comp-btn-label { font-size: 11px; font-weight: 700; color: var(--text-2); }
+
+/* Warning box */
+.warn-box {
+  background: var(--warn-bg);
+  border: 0.5px solid var(--warn-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex; gap: 10px; align-items: flex-start;
+  margin: 0 14px 10px;
+}
+.warn-icon  { color: var(--warn); flex-shrink: 0; margin-top: 1px; }
+.warn-title { font-size: 13px; font-weight: 700; color: var(--warn); margin-bottom: 4px; }
+.warn-text  { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+
+.warn-stop-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 0.5px solid var(--border-2);
+  font-size: 14px; color: var(--text);
+}
+.warn-stop-row:last-child { border-bottom: none; }
+.warn-stop-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+/* File zone */
+.file-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; text-align: center;
+  margin: 0 14px 12px;
+  background: var(--surface);
+  transition: border-color 0.15s, background 0.15s;
+}
+.file-zone:hover { border-color: var(--brand); background: var(--brand-dim); }
+.file-zone-icon  { color: var(--text-3); }
+.file-zone-title { font-size: 15px; font-weight: 700; color: var(--text-2); }
+.file-zone-sub   { font-size: 12px; color: var(--text-3); }
+
+.feed-chip {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 14px 8px;
+  box-shadow: 0 0 0 0.5px var(--border);
+}
+.feed-chip-icon  { width: 32px; height: 32px; background: var(--ok-bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--ok); flex-shrink: 0; }
+.feed-chip-body  { flex: 1; min-width: 0; }
+.feed-chip-name  { font-size: 14px; font-weight: 700; color: var(--text); }
+.feed-chip-sub   { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+.feed-chip-x     { color: var(--text-3); cursor: pointer; font-size: 18px; padding: 4px; }
+
+/* Home screen */
+.home-hero {
+  background: var(--brand);
+  padding: 28px 20px 22px;
+}
+.home-logo  { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+.home-title { font-size: 26px; font-weight: 700; color: #fff; line-height: 1.2; margin-bottom: 6px; }
+.home-sub   { font-size: 14px; color: rgba(255,255,255,0.72); line-height: 1.5; }
+
+.trip-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  margin: 0 14px 10px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px var(--border);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  transition: transform 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.trip-card:active { transform: scale(0.98); }
+.trip-icon {
+  width: 46px; height: 46px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 21px;
+}
+.trip-body      { flex: 1; min-width: 0; }
+.trip-title     { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trip-meta      { font-size: 12px; color: var(--text-3); }
+.trip-right     { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+.trip-stat      { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-2); }
+
+/* Stats row */
+.stats-row {
+  display: flex; background: var(--surface);
+  border-bottom: 0.5px solid var(--border); padding: 10px 0;
+}
+.stat-item  { flex: 1; text-align: center; }
+.stat-val   { font-family: 'Space Mono', monospace; font-size: 17px; font-weight: 700; color: var(--text); }
+.stat-lbl   { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-top: 2px; }
+.stat-div   { width: 0.5px; background: var(--border); margin: 4px 0; }
+
+/* Tabs */
+.tabs {
+  display: flex; background: var(--surface);
+  border-bottom: 0.5px solid var(--border);
+  position: sticky; top: 52px; z-index: 9;
+}
+.tab {
+  flex: 1; padding: 11px 4px; text-align: center;
+  font-size: 13px; font-weight: 700; color: var(--text-3);
+  cursor: pointer; border-bottom: 2.5px solid transparent;
+  transition: all 0.15s;
+}
+.tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+
+/* Simulated map */
+.map-sim {
+  background: var(--surface-2);
+  height: 260px;
+  position: relative;
+  overflow: hidden;
+}
+.map-sim svg { width: 100%; height: 100%; }
+
+/* Modal */
+.modal-backdrop {
+  display: none;
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: flex-end;
+  border-radius: inherit;
+}
+.modal-backdrop.open { display: flex; }
+.modal-sheet {
+  width: 100%;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 8px 16px 36px;
+}
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 10px auto 20px; }
+.modal-title  { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.modal-sub    { font-size: 14px; color: var(--text-3); line-height: 1.5; margin-bottom: 20px; }
+
+.opt-row {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 13px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: border-color 0.15s;
+}
+.opt-row.selected { border-color: var(--brand); background: var(--brand-dim); }
+.opt-row-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.opt-row-sub   { font-size: 12px; color: var(--text-3); }
+
+/* Screen navigator */
+.screen-nav {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  justify-content: center; max-width: 520px;
+}
+.snav-btn {
+  padding: 6px 13px;
+  background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 20px;
+  color: rgba(255,255,255,0.6);
+  font-size: 11px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s; letter-spacing: 0.3px;
+}
+.snav-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+.snav-btn.current { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+/* Form inputs */
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block; font-size: 11px; font-weight: 700;
+  color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px;
+  margin-bottom: 6px; padding-left: 2px;
+}
+.form-input {
+  width: 100%; background: var(--surface-2);
+  border: none; border-radius: 12px;
+  padding: 13px 14px; font-size: 15px;
+  color: var(--text); font-family: inherit; outline: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.form-input::placeholder { color: var(--text-3); }
+
+</style>
+</head>
+<body>
+
+<p class="page-label">All The Stops — Interactive UI Mockup</p>
+
+<button id="theme-toggle" onclick="toggleTheme()" style="
+  padding: 8px 18px;
+  background: rgba(255,255,255,0.11);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  color: rgba(255,255,255,0.8);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  letter-spacing: 0.3px;
+  transition: background 0.2s;
+">🌙 Dark mode</button>
+
+<!-- SVG sprite -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="ico-list"          viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></symbol>
+  <symbol id="ico-route"         viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></symbol>
+  <symbol id="ico-play"          viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></symbol>
+  <symbol id="ico-settings"      viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></symbol>
+  <symbol id="ico-chevron-left"  viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="ico-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="ico-check"         viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="ico-alert"         viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="ico-file-down"     viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></symbol>
+  <symbol id="ico-walk"          viewBox="0 0 24 24"><circle cx="13" cy="4" r="2"/><path d="m15 9-3 3-3 9"/><path d="m9 12-2 7"/><path d="m15 9 2 7"/></symbol>
+  <symbol id="ico-tram"          viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M3 12h18"/><path d="M12 3v4"/><circle cx="7.5" cy="18" r="1.5" fill="currentColor" stroke="none"/><circle cx="16.5" cy="18" r="1.5" fill="currentColor" stroke="none"/><path d="M7 7V4"/><path d="M17 7V4"/></symbol>
+  <symbol id="ico-map"           viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></symbol>
+  <symbol id="ico-refresh"       viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="ico-camera"        viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+  <symbol id="ico-download"      viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="ico-x"             viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="ico-plus"          viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="ico-info"          viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+  <symbol id="ico-skip"          viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></symbol>
+  <symbol id="ico-photo"         viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+</svg>
+
+<!-- ═══════════════ PHONE ═══════════════ -->
+<div class="phone" id="phone">
+
+  <div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons"><span>●●●</span>&nbsp;<span>WiFi</span>&nbsp;<span>🔋</span></div>
+  </div>
+
+  <div class="screen-area" id="screen-area">
+
+    <!-- ═══ 1 — HOME / MY TRIPS ═══ -->
+    <div class="screen active" id="s-home">
+      <div class="home-hero">
+        <div class="home-logo">All The Stops</div>
+        <div class="home-title">Every stop,<br>one journey.</div>
+        <div class="home-sub">Plan a route that visits every stop on a transit network in the shortest possible time.</div>
+      </div>
+
+      <div style="padding: 14px 0 4px;">
+        <button class="btn btn-primary btn-full" onclick="go('s-import',1)" style="margin: 0 14px 16px; width: calc(100% - 28px); font-size: 16px; padding: 15px;">
+          <svg class="ico" width="20" height="20"><use href="#ico-plus"/></svg>
+          New Trip
+        </button>
+      </div>
+
+      <div class="sec-label">Recent</div>
+
+      <div class="trip-card" onclick="go('s-options',1)">
+        <div class="trip-icon" style="background: linear-gradient(135deg,#D05C08,#C5202A);">🚊</div>
+        <div class="trip-body">
+          <div class="trip-title">Kraków · Trams</div>
+          <div class="trip-meta">125 stops · Sat 09:00–18:00</div>
+        </div>
+        <div class="trip-right">
+          <span class="chip chip-blue">Ready</span>
+          <span class="trip-stat">2h 34m</span>
+        </div>
+      </div>
+
+      <div class="trip-card" onclick="go('s-options',1)">
+        <div class="trip-icon" style="background: linear-gradient(135deg,#0A7265,#1450B0);">🚊</div>
+        <div class="trip-body">
+          <div class="trip-title">Vienna · Trams</div>
+          <div class="trip-meta">208 stops · Weekday 08:00–20:00</div>
+        </div>
+        <div class="trip-right">
+          <span class="chip chip-ok">Completed</span>
+          <span class="trip-stat">4h 12m</span>
+        </div>
+      </div>
+
+      <div style="height: 20px;"></div>
+    </div>
+
+    <!-- ═══ 2 — IMPORT GTFS ═══ -->
+    <div class="screen" id="s-import">
+      <div class="screen-header">
+        <div class="back-btn" onclick="go('s-home',0)"><svg class="ico" width="26" height="26"><use href="#ico-chevron-left"/></svg></div>
+        <span class="screen-title">Import Network</span>
+        <span class="screen-step">Step 1 of 3</span>
+      </div>
+
+      <div class="sec-label">Primary Network</div>
+
+      <div class="feed-chip">
+        <div class="feed-chip-icon"><svg class="ico" width="18" height="18"><use href="#ico-check"/></svg></div>
+        <div class="feed-chip-body">
+          <div class="feed-chip-name">GTFS_KRK_T.zip</div>
+          <div class="feed-chip-sub">23 routes · 333 stops · Valid to Oct 2026</div>
+        </div>
+        <span class="feed-chip-x">×</span>
+      </div>
+
+      <div class="sec-label">Auxiliary Networks <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3);font-size:12px;">optional</span></div>
+
+      <div class="feed-chip">
+        <div class="feed-chip-icon"><svg class="ico" width="18" height="18"><use href="#ico-check"/></svg></div>
+        <div class="feed-chip-body">
+          <div class="feed-chip-name">GTFS_KRK_A.zip</div>
+          <div class="feed-chip-sub">148 routes · 1 204 stops · Buses</div>
+        </div>
+        <span class="feed-chip-x">×</span>
+      </div>
+
+      <div class="file-zone" onclick="go('s-import-progress',1)">
+        <svg class="ico file-zone-icon" width="32" height="32"><use href="#ico-file-down"/></svg>
+        <div class="file-zone-title">Add another network</div>
+        <div class="file-zone-sub">Tap to import a GTFS archive</div>
+      </div>
+
+      <div style="height: 80px;"></div>
+      <div class="action-bar">
+        <button class="btn btn-primary btn-full" onclick="go('s-config',1)">Configure Trip →</button>
+      </div>
+    </div>
+
+    <!-- ═══ 3 — IMPORT PROGRESS ═══ -->
+    <div class="screen" id="s-import-progress">
+      <div class="screen-header">
+        <span class="screen-title">Importing…</span>
+      </div>
+
+      <div style="padding: 32px 20px 24px; text-align: center;">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;">Loading Tram Network</div>
+        <div style="font-size:13px;color:var(--text-3);">GTFS_KRK_T.zip · 8.2 MB</div>
+      </div>
+
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-dot done">✓</div>
+          <div>
+            <div class="step-title">Extracting archive</div>
+            <div class="step-sub">10 files unpacked</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-dot done">✓</div>
+          <div>
+            <div class="step-title">Parsing stops</div>
+            <div class="step-sub">333 stops loaded</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-dot active">
+            <svg class="ico" width="12" height="12" style="animation:spin 1.2s linear infinite;"><use href="#ico-refresh"/></svg>
+          </div>
+          <div>
+            <div class="step-title" style="color:var(--brand)">Parsing stop times</div>
+            <div class="step-sub">340 458 entries · ~5 s remaining</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-dot pending">4</div>
+          <div>
+            <div class="step-title">Writing to database</div>
+            <div class="step-sub">SQLite · this device only</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:24px 20px;color:var(--text-3);font-size:13px;line-height:1.6;">
+        Import runs once. Future sessions<br>load instantly from the local database.
+      </div>
+    </div>
+
+    <!-- ═══ 4 — CONFIGURE ═══ -->
+    <div class="screen" id="s-config">
+      <div class="screen-header">
+        <div class="back-btn" onclick="go('s-import',1)"><svg class="ico" width="26" height="26"><use href="#ico-chevron-left"/></svg></div>
+        <span class="screen-title">Configure Trip</span>
+        <span class="screen-step">Step 2 of 3</span>
+      </div>
+
+      <div style="padding: 12px 14px 0;">
+        <div class="form-group">
+          <label class="form-label">Trip name</label>
+          <input class="form-input" value="Kraków · Trams">
+        </div>
+      </div>
+
+      <div class="sec-label">Time window</div>
+      <div class="card">
+        <div style="padding:14px 16px 10px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text-3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.6px;">Day type</div>
+          <div class="seg-ctrl">
+            <div class="seg-opt">Weekday</div>
+            <div class="seg-opt active">Saturday</div>
+            <div class="seg-opt">Sunday</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 14px;">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.6px;">From</div>
+            <div style="background:var(--surface-2);border-radius:10px;padding:10px 12px;font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--text);">09:00</div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.6px;">To</div>
+            <div style="background:var(--surface-2);border-radius:10px;padding:10px 12px;font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--text);">18:00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-label">Options</div>
+      <div class="card">
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl-name">Allow walking transfers</div>
+            <div class="tl-sub">Suggest short walks to skip backtracking</div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl-name">Max walking time</div>
+          </div>
+          <div class="stepper" style="width:110px;">
+            <button class="stepper-btn">−</button>
+            <span class="stepper-val">10 min</span>
+            <button class="stepper-btn">+</button>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl-name">Min transfer time</div>
+          </div>
+          <div class="stepper" style="width:110px;">
+            <button class="stepper-btn">−</button>
+            <span class="stepper-val">2 min</span>
+            <button class="stepper-btn">+</button>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl-name">Cross-mode passthrough counts</div>
+            <div class="tl-sub">Bus passing a tram stop marks it visited</div>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="sec-label">Starting point <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3);font-size:12px;">optional</span></div>
+      <div style="padding: 0 14px 100px;">
+        <input class="form-input" placeholder="e.g. Rondo Mogilskie — leave blank for best route">
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-primary btn-full" onclick="go('s-computing',1)">Find Routes →</button>
+      </div>
+    </div>
+
+    <!-- ═══ 5 — COMPUTING ═══ -->
+    <div class="screen" id="s-computing">
+      <div class="screen-header">
+        <span class="screen-title">Finding Routes</span>
+        <span class="screen-step">Step 3 of 3</span>
+      </div>
+
+      <div style="padding: 32px 20px 20px; text-align: center;">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;">Building optimal routes</div>
+        <div style="font-size:13px;color:var(--text-3);">Saturday · 09:00–18:00 · 333 stops</div>
+      </div>
+
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-dot done">✓</div>
+          <div>
+            <div class="step-title">Merging platforms into stations</div>
+            <div class="step-sub">168 stations identified</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-dot done">✓</div>
+          <div>
+            <div class="step-title">Compressing transit graph</div>
+            <div class="step-sub">47 junction nodes · 68 compressed edges</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-dot active">
+            <svg class="ico" width="12" height="12" style="animation:spin 1.2s linear infinite"><use href="#ico-refresh"/></svg>
+          </div>
+          <div>
+            <div class="step-title" style="color:var(--brand)">Filtering timetables</div>
+            <div class="step-sub">Computing local median travel times…</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-dot pending">4</div>
+          <div>
+            <div class="step-title">Computing route options</div>
+            <div class="step-sub">Greedy search + 2-opt improvement</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-dot pending">5</div>
+          <div>
+            <div class="step-title">Scheduling timetables</div>
+            <div class="step-sub">Assigning real departure times</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 6 — WARNINGS ═══ -->
+    <div class="screen" id="s-warnings">
+      <div class="screen-header">
+        <span class="screen-title">Before you go</span>
+      </div>
+
+      <div style="padding: 14px 0;">
+        <div class="warn-box">
+          <svg class="ico warn-icon" width="18" height="18"><use href="#ico-alert"/></svg>
+          <div>
+            <div class="warn-title">3 stops unserved on Saturday</div>
+            <div class="warn-text">These stops have no tram service in your time window (09:00–18:00). They will not count toward your total.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="warn-stop-row">
+            <svg class="ico" width="16" height="16" style="color:var(--text-3);flex-shrink:0;"><use href="#ico-tram"/></svg>
+            <div style="flex:1;">
+              <div>Grodzki Urząd Pracy</div>
+              <div class="warn-stop-meta">Last service Fri 23:40 · Resumes Mon 05:10</div>
+            </div>
+          </div>
+          <div class="warn-stop-row">
+            <svg class="ico" width="16" height="16" style="color:var(--text-3);flex-shrink:0;"><use href="#ico-tram"/></svg>
+            <div style="flex:1;">
+              <div>Olszanica</div>
+              <div class="warn-stop-meta">No Saturday service on this branch</div>
+            </div>
+          </div>
+          <div class="warn-stop-row">
+            <svg class="ico" width="16" height="16" style="color:var(--text-3);flex-shrink:0;"><use href="#ico-tram"/></svg>
+            <div style="flex:1;">
+              <div>Czerwone Maki P+R</div>
+              <div class="warn-stop-meta">Service resumes after 18:30</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec-label" style="margin-top:4px;">Network note</div>
+        <div class="warn-box" style="border-color:var(--border);background:var(--surface-2);">
+          <svg class="ico" width="18" height="18" style="color:var(--brand);flex-shrink:0;margin-top:1px;"><use href="#ico-info"/></svg>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">1 skippable edge</div>
+            <div style="font-size:12px;color:var(--text-2);line-height:1.5;">Rondo Matecznego ↔ Wanda is a direct connection with no intermediate stops. Both endpoints are visited via other legs, so this edge is omitted from all options.</div>
+          </div>
+        </div>
+
+        <div style="height: 80px;"></div>
+        <div class="action-bar">
+          <button class="btn btn-primary btn-full" onclick="go('s-options',1)">View Route Options →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 7 — OPTIONS / FORK CARDS ═══ -->
+    <div class="screen" id="s-options">
+      <div class="screen-header">
+        <div class="back-btn" onclick="go('s-warnings',1)"><svg class="ico" width="26" height="26"><use href="#ico-chevron-left"/></svg></div>
+        <span class="screen-title">Route Options</span>
+      </div>
+
+      <div style="padding: 8px 20px 12px; font-size:13px; color:var(--text-3); line-height:1.5;">
+        Kraków Trams · Saturday 09:00–18:00 · 125 stops
+      </div>
+
+      <!-- Option A — best -->
+      <div class="fork-card best" onclick="go('s-route-detail',1)">
+        <div class="fork-card-top">
+          <div class="fork-row">
+            <div class="fork-option-label">Option A</div>
+            <div class="fork-badge">★ Best</div>
+          </div>
+          <div class="fork-duration">2h 34m</div>
+          <div class="fork-route">Mistrzejowice → Kurdwanów</div>
+          <div class="fork-stats">
+            <div class="fork-stat"><svg class="ico" width="12" height="12"><use href="#ico-route"/></svg> 12 transfers</div>
+            <div class="fork-stat"><svg class="ico" width="12" height="12"><use href="#ico-walk"/></svg> 0 walks</div>
+            <div class="fork-stat"><svg class="ico" width="12" height="12"><use href="#ico-tram"/></svg> 125 stops</div>
+          </div>
+        </div>
+        <div class="fork-tl">
+          <div class="tl-bar">
+            <div class="tl-seg l4"  style="flex:38"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l1"  style="flex:18"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l17" style="flex:14"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l8"  style="flex:30"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l6"  style="flex:20"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l2"  style="flex:16"></div>
+          </div>
+          <div class="tl-times">
+            <span class="tl-time">09:14</span>
+            <span class="tl-time">11:48</span>
+          </div>
+          <div class="tl-stops">
+            <span class="tl-stop">Mistrzejowice</span>
+            <span class="tl-stop">Kurdwanów</span>
+          </div>
+        </div>
+        <div class="fork-tagline">Starts at the north terminus, loops clockwise through the centre, finishes south.</div>
+        <div class="fork-footer">
+          <span style="font-size:13px;font-weight:700;color:var(--brand);">Details →</span>
+        </div>
+      </div>
+
+      <!-- Option B -->
+      <div class="fork-card" onclick="go('s-route-detail',1)">
+        <div class="fork-card-top">
+          <div class="fork-row">
+            <div class="fork-option-label">Option B</div>
+          </div>
+          <div class="fork-duration">2h 41m</div>
+          <div class="fork-route">Kurdwanów → Mistrzejowice</div>
+          <div class="fork-stats">
+            <div class="fork-stat"><svg class="ico" width="12" height="12"><use href="#ico-route"/></svg> 13 transfers</div>
+            <div class="fork-stat"><svg class="ico" width="12" height="12"><use href="#ico-walk"/></svg> 0 walks</div>
+            <div class="fork-stat"><svg class="ico" width="12" height="12"><use href="#ico-tram"/></svg> 125 stops</div>
+          </div>
+        </div>
+        <div class="fork-tl">
+          <div class="tl-bar">
+            <div class="tl-seg l2"  style="flex:16"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l6"  style="flex:20"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l8"  style="flex:32"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l17" style="flex:14"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l1"  style="flex:18"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l4"  style="flex:40"></div>
+          </div>
+          <div class="tl-times">
+            <span class="tl-time">09:08</span>
+            <span class="tl-time">11:49</span>
+          </div>
+          <div class="tl-stops">
+            <span class="tl-stop">Kurdwanów</span>
+            <span class="tl-stop">Mistrzejowice</span>
+          </div>
+        </div>
+        <div class="fork-tagline">Counter-clockwise mirror of Option A. One extra transfer but avoids a tight connection at Rondo Grunwaldzkie.</div>
+        <div class="fork-footer">
+          <span style="font-size:13px;font-weight:700;color:var(--brand);">Details →</span>
+        </div>
+      </div>
+
+      <!-- Option C — user preferred start -->
+      <div class="fork-card" onclick="go('s-route-detail',1)">
+        <div class="fork-card-top">
+          <div class="fork-row">
+            <div class="fork-option-label">Option C</div>
+            <div class="fork-badge" style="background:var(--surface-2);color:var(--text-3);">Near your start</div>
+          </div>
+          <div class="fork-duration">2h 52m</div>
+          <div class="fork-route">Rondo Mogilskie → Krowodrza Górka</div>
+          <div class="fork-stats">
+            <div class="fork-stat"><svg class="ico" width="12" height="12"><use href="#ico-route"/></svg> 14 transfers</div>
+            <div class="fork-stat"><svg class="ico" width="12" height="12"><use href="#ico-walk"/></svg> 1 walk</div>
+            <div class="fork-stat"><svg class="ico" width="12" height="12"><use href="#ico-tram"/></svg> 125 stops</div>
+          </div>
+        </div>
+        <div class="fork-tl">
+          <div class="tl-bar">
+            <div class="tl-seg l4"  style="flex:22"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l8"  style="flex:30"></div>
+            <div class="tl-walk-seg" style="flex:5"></div>
+            <div class="tl-seg l1"  style="flex:18"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l17" style="flex:14"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l6"  style="flex:20"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-seg l2"  style="flex:18"></div>
+          </div>
+          <div class="tl-times">
+            <span class="tl-time">09:22</span>
+            <span class="tl-time">12:14</span>
+          </div>
+          <div class="tl-stops">
+            <span class="tl-stop">Rondo Mogilskie</span>
+            <span class="tl-stop">Krowodrza Górka</span>
+          </div>
+        </div>
+        <div class="fork-note">Starting from Rondo Mogilskie as requested — 18 min slower than optimal. Consider travelling to Mistrzejowice first to save time.</div>
+        <div class="fork-footer">
+          <span style="font-size:13px;font-weight:700;color:var(--brand);">Details →</span>
+        </div>
+      </div>
+
+      <div style="height: 20px;"></div>
+    </div>
+
+    <!-- ═══ 8 — ROUTE DETAIL ═══ -->
+    <div class="screen" id="s-route-detail">
+      <div class="screen-header">
+        <div class="back-btn" onclick="go('s-options',1)"><svg class="ico" width="26" height="26"><use href="#ico-chevron-left"/></svg></div>
+        <span class="screen-title">Option A</span>
+        <button class="btn btn-primary btn-sm" onclick="go('s-itinerary',1)">Choose</button>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-item"><div class="stat-val">2h 34m</div><div class="stat-lbl">Duration</div></div>
+        <div class="stat-div"></div>
+        <div class="stat-item"><div class="stat-val">12</div><div class="stat-lbl">Transfers</div></div>
+        <div class="stat-div"></div>
+        <div class="stat-item"><div class="stat-val">125</div><div class="stat-lbl">Stops</div></div>
+        <div class="stat-div"></div>
+        <div class="stat-item"><div class="stat-val">0</div><div class="stat-lbl">Walks</div></div>
+      </div>
+
+      <div class="tabs" id="detail-tabs">
+        <div class="tab active" onclick="detailTab('timeline',this)">Timeline</div>
+        <div class="tab"       onclick="detailTab('map',this)">Map</div>
+        <div class="tab"       onclick="detailTab('legs',this)">Legs</div>
+      </div>
+
+      <!-- Timeline tab -->
+      <div id="dt-timeline">
+        <div style="padding: 16px 14px 8px;">
+          <div class="tl-bar" style="height:14px;">
+            <div class="tl-seg l4"  style="flex:38;height:14px;border-radius:6px;"></div>
+            <div class="tl-dot" style="width:10px;height:10px;"></div>
+            <div class="tl-seg l1"  style="flex:18;height:14px;border-radius:6px;"></div>
+            <div class="tl-dot" style="width:10px;height:10px;"></div>
+            <div class="tl-seg l17" style="flex:14;height:14px;border-radius:6px;"></div>
+            <div class="tl-dot" style="width:10px;height:10px;"></div>
+            <div class="tl-seg l8"  style="flex:30;height:14px;border-radius:6px;"></div>
+            <div class="tl-dot" style="width:10px;height:10px;"></div>
+            <div class="tl-seg l6"  style="flex:20;height:14px;border-radius:6px;"></div>
+            <div class="tl-dot" style="width:10px;height:10px;"></div>
+            <div class="tl-seg l2"  style="flex:16;height:14px;border-radius:6px;"></div>
+          </div>
+          <div class="tl-times" style="margin-top:8px;">
+            <span class="tl-time">09:14</span>
+            <span class="tl-time">09:52</span>
+            <span class="tl-time">10:30</span>
+            <span class="tl-time">11:48</span>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 14px 16px;">
+          <div style="display:flex;align-items:center;gap:5px;"><div class="line-badge l4" style="width:22px;height:22px;font-size:10px;">4</div><span style="font-size:12px;color:var(--text-2);">Tram 4</span></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div class="line-badge l1" style="width:22px;height:22px;font-size:10px;">1</div><span style="font-size:12px;color:var(--text-2);">Tram 1</span></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div class="line-badge l17" style="width:22px;height:22px;font-size:10px;">17</div><span style="font-size:12px;color:var(--text-2);">Tram 17</span></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div class="line-badge l8" style="width:22px;height:22px;font-size:10px;">8</div><span style="font-size:12px;color:var(--text-2);">Tram 8</span></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div class="line-badge l6" style="width:22px;height:22px;font-size:10px;">6</div><span style="font-size:12px;color:var(--text-2);">Tram 6</span></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div class="line-badge l2" style="width:22px;height:22px;font-size:10px;">2</div><span style="font-size:12px;color:var(--text-2);">Tram 2</span></div>
+        </div>
+
+        <div class="sec-label">Key stops</div>
+        <div class="card">
+          <div class="info-row">
+            <div class="info-icon"><svg class="ico" width="18" height="18"><use href="#ico-tram"/></svg></div>
+            <div><div class="info-label">Start · Tram 4 dep.</div><div class="info-value">Mistrzejowice · <span style="font-family:'Space Mono',monospace;font-size:14px;">09:14</span></div></div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon"><svg class="ico" width="18" height="18"><use href="#ico-route"/></svg></div>
+            <div><div class="info-label">Longest leg · 28 stops</div><div class="info-value">Mistrzejowice → Rondo Mogilskie</div></div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon"><svg class="ico" width="18" height="18"><use href="#ico-tram"/></svg></div>
+            <div><div class="info-label">Finish · Tram 2 arr.</div><div class="info-value">Kurdwanów · <span style="font-family:'Space Mono',monospace;font-size:14px;">11:48</span></div></div>
+          </div>
+        </div>
+        <div style="height:20px;"></div>
+      </div>
+
+      <!-- Map tab (hidden) -->
+      <div id="dt-map" style="display:none;">
+        <div class="map-sim">
+          <svg viewBox="0 0 390 260" xmlns="http://www.w3.org/2000/svg">
+            <!-- Street grid background -->
+            <rect width="390" height="260" fill="var(--surface-2)"/>
+            <line x1="0" y1="130" x2="390" y2="130" stroke="var(--border)" stroke-width="8"/>
+            <line x1="195" y1="0" x2="195" y2="260" stroke="var(--border)" stroke-width="8"/>
+            <line x1="0" y1="80" x2="390" y2="80" stroke="var(--border-2)" stroke-width="4"/>
+            <line x1="0" y1="180" x2="390" y2="180" stroke="var(--border-2)" stroke-width="4"/>
+            <line x1="100" y1="0" x2="100" y2="260" stroke="var(--border-2)" stroke-width="4"/>
+            <line x1="290" y1="0" x2="290" y2="260" stroke="var(--border-2)" stroke-width="4"/>
+            <!-- Tram 4 route (orange) -->
+            <polyline points="30,40 100,80 195,130 290,130 360,130" fill="none" stroke="#D05C08" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Tram 1 route (red) -->
+            <polyline points="100,80 195,130 195,200 195,240" fill="none" stroke="#C5202A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Tram 8 route (teal) -->
+            <polyline points="30,180 100,180 195,180 290,180 360,220" fill="none" stroke="#0A7265" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Tram 6 route (purple) -->
+            <polyline points="30,80 100,80 195,130 290,180" fill="none" stroke="#6A2C9E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6,3"/>
+            <!-- Tram 17 route (green) -->
+            <polyline points="100,0 100,80 100,130 100,180 100,260" fill="none" stroke="#1E7835" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Tram 2 route (blue) -->
+            <polyline points="0,130 100,130 195,130 290,80 360,40" fill="none" stroke="#1450B0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Junction dots -->
+            <circle cx="195" cy="130" r="7" fill="var(--surface)" stroke="#888" stroke-width="2"/>
+            <circle cx="100" cy="80"  r="6" fill="var(--surface)" stroke="#888" stroke-width="2"/>
+            <circle cx="100" cy="180" r="6" fill="var(--surface)" stroke="#888" stroke-width="2"/>
+            <circle cx="290" cy="130" r="6" fill="var(--surface)" stroke="#888" stroke-width="2"/>
+            <circle cx="290" cy="180" r="6" fill="var(--surface)" stroke="#888" stroke-width="2"/>
+            <!-- Terminal dots -->
+            <circle cx="30"  cy="40"  r="5" fill="#D05C08"/>
+            <circle cx="195" cy="240" r="5" fill="#C5202A"/>
+            <circle cx="360" cy="220" r="5" fill="#0A7265"/>
+            <!-- Labels -->
+            <text x="198" y="125" font-family="'Space Mono',monospace" font-size="8" fill="var(--text-2)" font-weight="700">Rondo Mogilskie</text>
+            <text x="25"  y="36"  font-family="'Space Mono',monospace" font-size="7" fill="#D05C08" font-weight="700">Mistrzejowice</text>
+            <text x="165" y="252" font-family="'Space Mono',monospace" font-size="7" fill="#C5202A" font-weight="700">Salwator</text>
+            <text x="300" y="226" font-family="'Space Mono',monospace" font-size="7" fill="#0A7265" font-weight="700">Kurdwanów</text>
+          </svg>
+        </div>
+        <div style="padding:10px 14px;font-size:12px;color:var(--text-3);line-height:1.5;background:var(--surface);border-top:0.5px solid var(--border);">
+          Colours match the timeline above. Tap a line to see stops on that leg.
+        </div>
+        <div style="height:20px;"></div>
+      </div>
+
+      <!-- Legs tab (hidden) -->
+      <div id="dt-legs" style="display:none;">
+        <div class="card" style="margin-top:12px;">
+          <div class="leg-row">
+            <div class="leg-times"><div class="leg-time-dep">09:14</div><div class="leg-time-arr">09:52</div></div>
+            <div class="line-badge l4">4</div>
+            <div class="leg-body"><div class="leg-name">Tram 4 → Prokocim Mały</div><div class="leg-sub">Mistrzejowice · 28 stops</div></div>
+          </div>
+          <div class="leg-transfer"><svg class="ico" width="14" height="14"><use href="#ico-route"/></svg> Transfer · 8 min · Rondo Mogilskie</div>
+          <div class="leg-row">
+            <div class="leg-times"><div class="leg-time-dep">10:00</div><div class="leg-time-arr">10:14</div></div>
+            <div class="line-badge l1">1</div>
+            <div class="leg-body"><div class="leg-name">Tram 1 → Wańkowicza</div><div class="leg-sub">Rondo Mogilskie · 10 stops</div></div>
+          </div>
+          <div class="leg-transfer"><svg class="ico" width="14" height="14"><use href="#ico-route"/></svg> Transfer · 6 min · Salwator</div>
+          <div class="leg-row">
+            <div class="leg-times"><div class="leg-time-dep">10:20</div><div class="leg-time-arr">10:34</div></div>
+            <div class="line-badge l17">17</div>
+            <div class="leg-body"><div class="leg-name">Tram 17 → Krowodrza Górka</div><div class="leg-sub">Cichy Kącik · 12 stops</div></div>
+          </div>
+          <div class="leg-transfer"><svg class="ico" width="14" height="14"><use href="#ico-route"/></svg> Transfer · 9 min · Rondo Grunwaldzkie</div>
+          <div class="leg-row">
+            <div class="leg-times"><div class="leg-time-dep">10:43</div><div class="leg-time-arr">11:12</div></div>
+            <div class="line-badge l8">8</div>
+            <div class="leg-body"><div class="leg-name">Tram 8 → Borek Fałęcki</div><div class="leg-sub">Rondo Grunwaldzkie · 22 stops</div></div>
+          </div>
+          <div class="leg-transfer"><svg class="ico" width="14" height="14"><use href="#ico-route"/></svg> Transfer · 5 min · Rondo Matecznego</div>
+          <div class="leg-row">
+            <div class="leg-times"><div class="leg-time-dep">11:17</div><div class="leg-time-arr">11:35</div></div>
+            <div class="line-badge l6">6</div>
+            <div class="leg-body"><div class="leg-name">Tram 6 → Bieńczyce</div><div class="leg-sub">Rondo Matecznego · 14 stops</div></div>
+          </div>
+          <div class="leg-transfer"><svg class="ico" width="14" height="14"><use href="#ico-route"/></svg> Transfer · 4 min · Teatr Słowackiego</div>
+          <div class="leg-row">
+            <div class="leg-times"><div class="leg-time-dep">11:39</div><div class="leg-time-arr">11:48</div></div>
+            <div class="line-badge l2">2</div>
+            <div class="leg-body"><div class="leg-name">Tram 2 → Kurdwanów</div><div class="leg-sub">Stary Kleparz · 8 stops</div></div>
+          </div>
+        </div>
+        <div style="height:20px;"></div>
+      </div>
+    </div>
+
+    <!-- ═══ 9 — ITINERARY (confirmed) ═══ -->
+    <div class="screen" id="s-itinerary">
+      <div class="screen-header">
+        <div class="back-btn" onclick="go('s-route-detail',1)"><svg class="ico" width="26" height="26"><use href="#ico-chevron-left"/></svg></div>
+        <span class="screen-title">Your Route</span>
+      </div>
+
+      <div style="background:var(--surface);padding:14px 20px 12px;border-bottom:0.5px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div>
+            <div style="font-size:13px;color:var(--text-3);margin-bottom:2px;">Saturday, 26 July</div>
+            <div style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--text);">09:14 → 11:48</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:13px;color:var(--text-3);">125 stops</div>
+            <div style="font-size:13px;font-weight:700;color:var(--ok);">All lines covered</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" style="flex:1;gap:5px;" onclick="">
+            <svg class="ico" width="14" height="14"><use href="#ico-download"/></svg>Download maps
+          </button>
+          <button class="btn btn-primary btn-sm" style="flex:1;" onclick="go('s-companion',2)">
+            Start Trip →
+          </button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <div class="leg-row">
+          <div class="leg-times"><div class="leg-time-dep">09:14</div><div class="leg-time-arr">09:52</div></div>
+          <div class="line-badge l4">4</div>
+          <div class="leg-body"><div class="leg-name">Tram 4 → Prokocim Mały</div><div class="leg-sub">Mistrzejowice · 28 stops</div></div>
+        </div>
+        <div class="leg-transfer"><svg class="ico" width="14" height="14"><use href="#ico-route"/></svg> Transfer · 8 min · Rondo Mogilskie</div>
+        <div class="leg-row">
+          <div class="leg-times"><div class="leg-time-dep">10:00</div><div class="leg-time-arr">10:14</div></div>
+          <div class="line-badge l1">1</div>
+          <div class="leg-body"><div class="leg-name">Tram 1 → Wańkowicza</div><div class="leg-sub">Rondo Mogilskie · 10 stops</div></div>
+        </div>
+        <div class="leg-transfer"><svg class="ico" width="14" height="14"><use href="#ico-route"/></svg> Transfer · 6 min · Salwator</div>
+        <div class="leg-row">
+          <div class="leg-times"><div class="leg-time-dep">10:20</div><div class="leg-time-arr">10:34</div></div>
+          <div class="line-badge l17">17</div>
+          <div class="leg-body"><div class="leg-name">Tram 17 → Krowodrza Górka</div><div class="leg-sub">Cichy Kącik · 12 stops</div></div>
+        </div>
+        <div class="leg-transfer"><svg class="ico" width="14" height="14"><use href="#ico-route"/></svg> Transfer · 9 min · Rondo Grunwaldzkie</div>
+        <div class="leg-row">
+          <div class="leg-times"><div class="leg-time-dep">10:43</div><div class="leg-time-arr">11:12</div></div>
+          <div class="line-badge l8">8</div>
+          <div class="leg-body"><div class="leg-name">Tram 8 → Borek Fałęcki</div><div class="leg-sub">Rondo Grunwaldzkie · 22 stops</div></div>
+        </div>
+        <div class="leg-transfer"><svg class="ico" width="14" height="14"><use href="#ico-route"/></svg> Transfer · 5 min · Rondo Matecznego</div>
+        <div class="leg-row">
+          <div class="leg-times"><div class="leg-time-dep">11:17</div><div class="leg-time-arr">11:35</div></div>
+          <div class="line-badge l6">6</div>
+          <div class="leg-body"><div class="leg-name">Tram 6 → Bieńczyce</div><div class="leg-sub">Rondo Matecznego · 14 stops</div></div>
+        </div>
+        <div class="leg-transfer"><svg class="ico" width="14" height="14"><use href="#ico-route"/></svg> Transfer · 4 min · Teatr Słowackiego</div>
+        <div class="leg-row">
+          <div class="leg-times"><div class="leg-time-dep">11:39</div><div class="leg-time-arr">11:48</div></div>
+          <div class="line-badge l2">2</div>
+          <div class="leg-body"><div class="leg-name">Tram 2 → Kurdwanów</div><div class="leg-sub">Stary Kleparz · 8 stops</div></div>
+        </div>
+      </div>
+      <div style="height:20px;"></div>
+    </div>
+
+    <!-- ═══ 10 — COMPANION ═══ -->
+    <div class="screen" id="s-companion">
+      <div class="screen-header">
+        <span class="screen-title">Live</span>
+        <span class="chip chip-ok" style="margin-left:auto;"><svg class="ico" width="10" height="10" style="fill:var(--ok);stroke:none;"><circle cx="5" cy="5" r="5"/></svg> In progress</span>
+      </div>
+
+      <div class="progress-strip">
+        <div class="progress-header">
+          <span class="progress-title">Stops visited</span>
+          <span class="progress-count">47 / 125</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:37.6%"></div>
+        </div>
+      </div>
+
+      <!-- Current vehicle -->
+      <div class="vehicle-card">
+        <div class="vehicle-stripe" style="background:var(--l4)"></div>
+        <div class="vehicle-body">
+          <div class="vehicle-header">
+            <div class="line-badge lg l4">4</div>
+            <div>
+              <div class="vehicle-mode">Tram · On board</div>
+              <div class="vehicle-line">Tram 4</div>
+              <div class="vehicle-dir">→ direction Prokocim Mały</div>
+            </div>
+          </div>
+          <div class="vehicle-stops">
+            <div class="vstop">
+              <div class="vstop-dot current"></div>
+              <div class="vstop-name current">Rondo Mogilskie</div>
+              <div class="vstop-eta now">now</div>
+            </div>
+            <div class="vstop">
+              <div class="vstop-dot next"></div>
+              <div class="vstop-name">Rondo Grunwaldzkie</div>
+              <div class="vstop-eta">~3 min</div>
+            </div>
+            <div class="vstop">
+              <div class="vstop-dot"></div>
+              <div class="vstop-name" style="color:var(--text-3)">Rondo Matecznego</div>
+              <div class="vstop-eta">~9 min</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming transfer -->
+      <div class="transfer-alert">
+        <div class="line-badge l1" style="width:26px;height:26px;font-size:11px;margin-top:1px;">1</div>
+        <div class="ta-body">
+          <div class="ta-title">Transfer in 17 min — Rondo Mogilskie</div>
+          <div class="ta-sub">Board Tram 1 → Wańkowicza · dep. 10:00 · 8 min buffer</div>
+        </div>
+      </div>
+
+      <!-- Remaining route mini-bar -->
+      <div style="padding: 0 14px 10px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px;">Remaining</div>
+        <div class="tl-bar">
+          <div class="tl-seg l4"  style="flex:16;opacity:0.4"></div>
+          <div class="tl-dot"></div>
+          <div class="tl-seg l1"  style="flex:18"></div>
+          <div class="tl-dot"></div>
+          <div class="tl-seg l17" style="flex:14"></div>
+          <div class="tl-dot"></div>
+          <div class="tl-seg l8"  style="flex:30"></div>
+          <div class="tl-dot"></div>
+          <div class="tl-seg l6"  style="flex:20"></div>
+          <div class="tl-dot"></div>
+          <div class="tl-seg l2"  style="flex:16"></div>
+        </div>
+        <div class="tl-times">
+          <span class="tl-time" style="color:var(--text-3);opacity:0.5;">now</span>
+          <span class="tl-time">11:48</span>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="comp-actions">
+        <button class="comp-btn" onclick="go('s-companion-map',2)">
+          <svg class="ico comp-btn-icon" width="22" height="22"><use href="#ico-map"/></svg>
+          <span class="comp-btn-label">Map</span>
+        </button>
+        <button class="comp-btn" onclick="document.getElementById('missed-modal').classList.add('open')">
+          <svg class="ico comp-btn-icon" width="22" height="22"><use href="#ico-refresh"/></svg>
+          <span class="comp-btn-label">Recalculate</span>
+        </button>
+        <button class="comp-btn">
+          <svg class="ico" width="22" height="22" style="color:var(--text-3);"><use href="#ico-camera"/></svg>
+          <span class="comp-btn-label" style="color:var(--text-3);">Photo</span>
+        </button>
+      </div>
+
+      <!-- Missed vehicle modal -->
+      <div class="modal-backdrop" id="missed-modal">
+        <div class="modal-sheet">
+          <div class="modal-handle"></div>
+          <div class="modal-title">Missed your tram?</div>
+          <div class="modal-sub">Tram 1 dep. 10:00 at Rondo Mogilskie — next in 12 min.</div>
+          <div class="opt-row selected">
+            <div class="opt-row-title">Wait for Tram 1 at 10:12</div>
+            <div class="opt-row-sub">Arrives Salwator 10:26 · 3 min buffer for next transfer</div>
+          </div>
+          <div class="opt-row">
+            <div class="opt-row-title">Recalculate from current position</div>
+            <div class="opt-row-sub">Find new optimal route · adds ~8 min</div>
+          </div>
+          <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="document.getElementById('missed-modal').classList.remove('open')">Confirm</button>
+          <button class="btn btn-secondary btn-full" style="margin-top:8px;" onclick="document.getElementById('missed-modal').classList.remove('open')">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 11 — SETTINGS ═══ -->
+    <div class="screen" id="s-settings">
+      <div class="screen-header">
+        <span class="screen-title">Settings</span>
+      </div>
+
+      <div class="sec-label">Display</div>
+      <div class="card">
+        <div class="toggle-row">
+          <div class="toggle-label"><div class="tl-name">Dark mode</div></div>
+          <div class="toggle" id="dark-toggle" onclick="this.classList.toggle('on');toggleTheme()"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl-name">Colourblind palette</div>
+            <div class="tl-sub">Uses shapes in addition to colour on maps and timelines</div>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="sec-label">Routing defaults</div>
+      <div class="card">
+        <div class="toggle-row">
+          <div class="toggle-label"><div class="tl-name">Allow walking transfers</div></div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label"><div class="tl-name">Max walking time</div></div>
+          <div class="stepper" style="width:110px;">
+            <button class="stepper-btn">−</button>
+            <span class="stepper-val">10 min</span>
+            <button class="stepper-btn">+</button>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label"><div class="tl-name">Min transfer time</div></div>
+          <div class="stepper" style="width:110px;">
+            <button class="stepper-btn">−</button>
+            <span class="stepper-val">2 min</span>
+            <button class="stepper-btn">+</button>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl-name">Cross-mode passthrough</div>
+            <div class="tl-sub">Bus through a tram stop marks it visited</div>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="sec-label">Data</div>
+      <div class="card">
+        <div class="info-row" style="cursor:pointer;">
+          <div class="info-icon"><svg class="ico" width="18" height="18"><use href="#ico-file-down"/></svg></div>
+          <div style="flex:1;"><div class="info-value">Manage imported networks</div><div class="info-value-sm">2 networks · 34 MB</div></div>
+          <svg class="ico" width="16" height="16" style="color:var(--text-3);"><use href="#ico-chevron-right"/></svg>
+        </div>
+        <div class="info-row" style="cursor:pointer;">
+          <div class="info-icon" style="background:var(--err-bg);"><svg class="ico" width="18" height="18" style="color:var(--err);"><use href="#ico-x"/></svg></div>
+          <div style="flex:1;"><div class="info-value" style="color:var(--err);">Clear all data</div><div class="info-value-sm">Removes all imports and saved trips</div></div>
+        </div>
+      </div>
+
+      <div style="height:20px;"></div>
+    </div>
+
+    <!-- ═══ 12 — COMPANION MAP ═══ -->
+    <div class="screen" id="s-companion-map">
+
+      <!-- Full-bleed SVG map -->
+      <svg viewBox="0 0 390 654" style="position:absolute;inset:0;width:100%;height:100%;" aria-label="Transit map showing route progress">
+
+        <!-- City fabric -->
+        <rect width="390" height="654" style="fill:var(--surface-2)"/>
+
+        <!-- City blocks (alternate tone) -->
+        <rect x="0"   y="0"   width="78"  height="150" style="fill:var(--bg)"/>
+        <rect x="78"  y="0"   width="117" height="150" style="fill:var(--bg)"/>
+        <rect x="195" y="0"   width="115" height="150" style="fill:var(--bg)"/>
+        <rect x="310" y="0"   width="80"  height="150" style="fill:var(--bg)"/>
+        <rect x="0"   y="150" width="78"  height="110" style="fill:var(--bg)"/>
+        <rect x="78"  y="150" width="117" height="110" style="fill:var(--bg)"/>
+        <rect x="195" y="150" width="115" height="110" style="fill:var(--bg)"/>
+        <rect x="310" y="150" width="80"  height="110" style="fill:var(--bg)"/>
+        <rect x="0"   y="260" width="78"  height="90"  style="fill:var(--bg)"/>
+        <rect x="78"  y="260" width="117" height="90"  style="fill:var(--bg)"/>
+        <rect x="195" y="260" width="115" height="90"  style="fill:var(--bg)"/>
+        <rect x="310" y="260" width="80"  height="90"  style="fill:var(--bg)"/>
+        <rect x="0"   y="350" width="78"  height="100" style="fill:var(--bg)"/>
+        <rect x="78"  y="350" width="117" height="100" style="fill:var(--bg)"/>
+        <rect x="195" y="350" width="115" height="100" style="fill:var(--bg)"/>
+        <rect x="310" y="350" width="80"  height="100" style="fill:var(--bg)"/>
+        <rect x="0"   y="560" width="390" height="94"  style="fill:var(--bg)"/>
+
+        <!-- Park -->
+        <rect x="100" y="362" width="90" height="85" rx="8" fill="#C8EDD4" opacity="0.55"/>
+        <rect x="110" y="372" width="70" height="65" rx="5" fill="#B8E4C4" opacity="0.45"/>
+
+        <!-- River -->
+        <path d="M0,492 Q70,470 155,496 Q235,522 318,502 Q355,494 390,508" fill="none" stroke="#B0D8EC" stroke-width="14" stroke-linecap="round" opacity="0.65"/>
+        <path d="M0,492 Q70,470 155,496 Q235,522 318,502 Q355,494 390,508" fill="none" stroke="#C8E8F8" stroke-width="6" stroke-linecap="round" opacity="0.55"/>
+
+        <!-- Major street grid -->
+        <line x1="78"  y1="0"   x2="78"  y2="654" style="stroke:var(--border);stroke-width:14"/>
+        <line x1="195" y1="0"   x2="195" y2="654" style="stroke:var(--border);stroke-width:18"/>
+        <line x1="310" y1="0"   x2="310" y2="654" style="stroke:var(--border);stroke-width:14"/>
+        <line x1="0"   y1="150" x2="390" y2="150" style="stroke:var(--border);stroke-width:10"/>
+        <line x1="0"   y1="258" x2="390" y2="258" style="stroke:var(--border);stroke-width:18"/>
+        <line x1="0"   y1="350" x2="390" y2="350" style="stroke:var(--border);stroke-width:10"/>
+        <line x1="0"   y1="450" x2="390" y2="450" style="stroke:var(--border);stroke-width:10"/>
+        <line x1="0"   y1="560" x2="390" y2="560" style="stroke:var(--border);stroke-width:10"/>
+
+        <!-- Secondary streets -->
+        <line x1="138" y1="0"   x2="138" y2="258" style="stroke:var(--border-2);stroke-width:5"/>
+        <line x1="252" y1="258" x2="252" y2="654" style="stroke:var(--border-2);stroke-width:5"/>
+        <line x1="0"   y1="204" x2="390" y2="204" style="stroke:var(--border-2);stroke-width:5"/>
+        <line x1="0"   y1="404" x2="390" y2="404" style="stroke:var(--border-2);stroke-width:5"/>
+
+        <!-- ══ FUTURE ROUTES (drawn below stop markers) ══ -->
+
+        <!-- Tram 2 (blue): east junction south to Kurdwanów -->
+        <polyline points="310,150 310,258 310,350 310,454 296,574"
+                  fill="none" stroke="#1450B0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- Tram 6 (purple, dashed): centre → east → Bieńczyce -->
+        <polyline points="195,258 252,204 310,150 358,108"
+                  fill="none" stroke="#6A2C9E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10,5"/>
+
+        <!-- Tram 8 (teal): south through centre to Kurdwanów -->
+        <polyline points="195,350 232,404 264,454 296,514 296,574"
+                  fill="none" stroke="#0A7265" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- Tram 17 (green): Salwator north to Krowodrza Górka -->
+        <polyline points="78,422 78,350 78,258 78,150 60,80 52,46"
+                  fill="none" stroke="#1E7835" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- Tram 1 (red): Rondo Mogilskie → west → Salwator -->
+        <polyline points="195,258 138,312 100,364 78,422"
+                  fill="none" stroke="#C5202A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- Tram 4 REMAINING (orange, on-board) -->
+        <polyline points="195,258 195,314 195,350"
+                  fill="none" stroke="#D05C08" stroke-width="5.5" stroke-linecap="round"/>
+
+        <!-- ══ VISITED ROUTE — Tram 4 (faded) ══ -->
+        <polyline points="52,52 80,88 112,128 140,170 166,214 195,258"
+                  fill="none" stroke="#D05C08" stroke-width="5.5" stroke-opacity="0.25"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- Visited stop dots -->
+        <circle cx="80"  cy="88"  r="3.5" fill="#B0A8C4" opacity="0.6"/>
+        <circle cx="112" cy="128" r="3.5" fill="#B0A8C4" opacity="0.6"/>
+        <circle cx="140" cy="170" r="3.5" fill="#B0A8C4" opacity="0.6"/>
+        <circle cx="166" cy="214" r="4.5" fill="#B0A8C4" opacity="0.65"/>
+
+        <!-- Stary Kleparz visited label -->
+        <text x="174" y="212" font-family="'Space Mono',monospace" font-size="8" fill="#B0A8C4">Stary Kleparz ✓</text>
+
+        <!-- Start terminus visited -->
+        <circle cx="52" cy="52" r="5" fill="#B0A8C4" opacity="0.55"/>
+        <text x="60" y="50" font-family="'Space Mono',monospace" font-size="8" fill="#B0A8C4" opacity="0.8">Mistrzejowice ✓</text>
+
+        <!-- ══ FUTURE STOP MARKERS ══ -->
+
+        <!-- Krowodrza Górka terminus (T17) -->
+        <circle cx="52" cy="46" r="6.5" fill="#1E7835"/>
+        <circle cx="52" cy="46" r="3"   fill="white"/>
+
+        <!-- Bieńczyce terminus (T6) -->
+        <circle cx="358" cy="108" r="5.5" fill="#6A2C9E"/>
+        <circle cx="358" cy="108" r="2.5" fill="white"/>
+        <text x="330" y="100" font-family="'Space Mono',monospace" font-size="7.5" style="fill:var(--text-3)">Bieńczyce</text>
+
+        <!-- Salwator junction (T1 / T17) -->
+        <circle cx="78" cy="422" r="8"   fill="white" stroke="#C5202A" stroke-width="2.5"/>
+        <circle cx="78" cy="422" r="3.5" fill="#C5202A"/>
+        <text x="88" y="427" font-family="'Space Mono',monospace" font-size="8" style="fill:var(--text-2)">Salwator</text>
+
+        <!-- T6/T2 east junction -->
+        <circle cx="310" cy="150" r="6.5" fill="white" stroke="#6A2C9E" stroke-width="2"/>
+        <circle cx="310" cy="150" r="3"   fill="#6A2C9E"/>
+
+        <!-- Tram 2 / Tram 8 south junction -->
+        <circle cx="296" cy="574" r="8"   fill="#0A7265"/>
+        <circle cx="296" cy="574" r="3.5" fill="white"/>
+
+        <!-- Small future stops along routes -->
+        <circle cx="138" cy="312" r="3" fill="white" stroke="#C5202A" stroke-width="1.5"/>
+        <circle cx="100" cy="364" r="3" fill="white" stroke="#C5202A" stroke-width="1.5"/>
+        <circle cx="78"  cy="350" r="3" fill="white" stroke="#1E7835" stroke-width="1.5"/>
+        <circle cx="78"  cy="258" r="3" fill="white" stroke="#1E7835" stroke-width="1.5"/>
+        <circle cx="78"  cy="150" r="3" fill="white" stroke="#1E7835" stroke-width="1.5"/>
+        <circle cx="78"  cy="80"  r="3" fill="white" stroke="#1E7835" stroke-width="1.5"/>
+        <circle cx="232" cy="404" r="3" fill="white" stroke="#0A7265" stroke-width="1.5"/>
+        <circle cx="264" cy="454" r="3" fill="white" stroke="#0A7265" stroke-width="1.5"/>
+        <circle cx="296" cy="514" r="3" fill="white" stroke="#0A7265" stroke-width="1.5"/>
+        <circle cx="252" cy="204" r="3" fill="white" stroke="#6A2C9E" stroke-width="1.5"/>
+        <circle cx="310" cy="258" r="3" fill="white" stroke="#1450B0" stroke-width="1.5"/>
+        <circle cx="310" cy="350" r="3" fill="white" stroke="#1450B0" stroke-width="1.5"/>
+        <circle cx="310" cy="454" r="3" fill="white" stroke="#1450B0" stroke-width="1.5"/>
+
+        <!-- ══ NEXT STOP — Rondo Grunwaldzkie ══ -->
+        <circle cx="195" cy="350" r="12"  fill="white" stroke="#D05C08" stroke-width="2.5" stroke-dasharray="5,2"/>
+        <circle cx="195" cy="350" r="5"   fill="#D05C08"/>
+
+        <!-- Next stop label -->
+        <rect x="140" y="360" width="128" height="16" rx="4" style="fill:var(--surface)" opacity="0.96"/>
+        <text x="146" y="372" font-family="'Space Mono',monospace" font-size="8.5" font-weight="700" fill="#D05C08">NEXT · Rondo Grunwaldzkie</text>
+
+        <!-- Tram 1 transfer chip at current pos -->
+        <rect x="206" y="268" width="28" height="16" rx="8" fill="#C5202A"/>
+        <text x="211" y="279" font-family="'Space Mono',monospace" font-size="9" font-weight="700" fill="white">T1</text>
+
+        <!-- ══ CURRENT POSITION ══ -->
+        <circle class="pos-ring-1" cx="195" cy="258" r="18" fill="#1A56C4" fill-opacity="0.22"/>
+        <circle class="pos-ring-2" cx="195" cy="258" r="13" fill="#1A56C4" fill-opacity="0.18"/>
+        <circle cx="195" cy="258" r="9"   fill="#1A56C4"/>
+        <circle cx="195" cy="258" r="4"   fill="white"/>
+
+        <!-- Current position label -->
+        <rect x="200" y="240" width="132" height="17" rx="4" style="fill:var(--surface)" opacity="0.97"/>
+        <text x="206" y="252" font-family="'Space Mono',monospace" font-size="9" font-weight="700" style="fill:var(--brand)">● Rondo Mogilskie</text>
+
+        <!-- Krowodrza Górka label -->
+        <text x="58" y="38" font-family="'Space Mono',monospace" font-size="7.5" style="fill:var(--text-3)">Krowodrza Górka</text>
+
+        <!-- Kurdwanów end label -->
+        <rect x="252" y="578" width="82" height="16" rx="3" style="fill:var(--surface)" opacity="0.95"/>
+        <text x="258" y="589" font-family="'Space Mono',monospace" font-size="8.5" font-weight="700" fill="#0A7265">Kurdwanów ★</text>
+
+      </svg>
+
+      <!-- Header overlay -->
+      <div class="map-header-bar">
+        <div class="back-btn" onclick="go('s-companion',2)"><svg class="ico" width="26" height="26"><use href="#ico-chevron-left"/></svg></div>
+        <span class="map-header-title">Map</span>
+        <span class="chip chip-ok" style="margin-left:auto;">
+          <svg class="ico" width="8" height="8" style="fill:var(--ok);stroke:none;"><circle cx="4" cy="4" r="4"/></svg>
+          In progress
+        </span>
+      </div>
+
+      <!-- Progress pill -->
+      <div class="map-progress-pill">
+        <svg class="ico" width="12" height="12" style="color:var(--ok);"><use href="#ico-check"/></svg>
+        <span class="pip-count">47</span>
+        <span class="pip-label">/ 125 stops visited</span>
+        <div style="width:60px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;width:37.6%;background:var(--ok);border-radius:2px;"></div>
+        </div>
+      </div>
+
+      <!-- Center-on-me button -->
+      <button class="map-center-btn" title="Centre on my position">📍</button>
+
+      <!-- Bottom info card -->
+      <div class="map-bottom-card">
+        <div class="map-bottom-handle"></div>
+
+        <!-- Current vehicle -->
+        <div class="map-vehicle-row">
+          <div class="line-badge l4" style="width:44px;height:44px;font-size:18px;">4</div>
+          <div class="map-vehicle-info">
+            <div class="map-vehicle-line">Tram 4 · on board</div>
+            <div class="map-vehicle-sub">→ direction Prokocim Mały</div>
+          </div>
+          <div class="map-vehicle-eta">
+            <div class="map-vehicle-eta-val">09:52</div>
+            <div class="map-vehicle-eta-label">next transfer</div>
+          </div>
+        </div>
+
+        <!-- Next stop -->
+        <div class="map-next-row">
+          <div class="map-next-dot"></div>
+          <div class="map-next-name">Rondo Grunwaldzkie</div>
+          <div class="map-next-eta">~3 min</div>
+        </div>
+
+        <!-- Transfer alert -->
+        <div class="map-transfer-row">
+          <div class="line-badge l1" style="width:22px;height:22px;font-size:10px;">1</div>
+          <div class="map-transfer-text">Transfer · Tram 1 → Wańkowicza · dep. 10:00</div>
+          <div class="map-transfer-time">17 min</div>
+        </div>
+
+        <div style="height:6px;"></div>
+      </div>
+
+    </div>
+
+  </div><!-- end screen-area -->
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-0" onclick="go('s-home',0)">
+      <svg class="ico" width="24" height="24"><use href="#ico-list"/></svg>
+      <span class="nav-label">Trips</span>
+    </div>
+    <div class="nav-item" id="nav-1" onclick="go('s-import',1)">
+      <svg class="ico" width="24" height="24"><use href="#ico-route"/></svg>
+      <span class="nav-label">Plan</span>
+    </div>
+    <div class="nav-item" id="nav-2" onclick="go('s-companion',2)">
+      <svg class="ico" width="24" height="24"><use href="#ico-play"/></svg>
+      <span class="nav-label">Live</span>
+    </div>
+    <div class="nav-item" id="nav-3" onclick="go('s-settings',3)">
+      <svg class="ico" width="24" height="24"><use href="#ico-settings"/></svg>
+      <span class="nav-label">Settings</span>
+    </div>
+  </div>
+
+</div><!-- end phone -->
+
+<!-- Screen navigator -->
+<div class="screen-nav" id="screen-nav">
+  <button class="snav-btn current" onclick="jumpTo('s-home',0)">Home</button>
+  <button class="snav-btn" onclick="jumpTo('s-import',1)">Import</button>
+  <button class="snav-btn" onclick="jumpTo('s-import-progress',1)">Import Progress</button>
+  <button class="snav-btn" onclick="jumpTo('s-config',1)">Configure</button>
+  <button class="snav-btn" onclick="jumpTo('s-computing',1)">Computing</button>
+  <button class="snav-btn" onclick="jumpTo('s-warnings',1)">Warnings</button>
+  <button class="snav-btn" onclick="jumpTo('s-options',1)">Options</button>
+  <button class="snav-btn" onclick="jumpTo('s-route-detail',1)">Route Detail</button>
+  <button class="snav-btn" onclick="jumpTo('s-itinerary',1)">Itinerary</button>
+  <button class="snav-btn" onclick="jumpTo('s-companion',2)">Companion</button>
+  <button class="snav-btn" onclick="jumpTo('s-companion-map',2)">Companion Map</button>
+  <button class="snav-btn" onclick="jumpTo('s-settings',3)">Settings</button>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse-map {
+  0%   { opacity: 0.55; transform: scale(1);   }
+  70%  { opacity: 0;    transform: scale(2.4); }
+  100% { opacity: 0;    transform: scale(2.4); }
+}
+@keyframes pulse-map-2 {
+  0%   { opacity: 0.35; transform: scale(1);   }
+  70%  { opacity: 0;    transform: scale(1.9); }
+  100% { opacity: 0;    transform: scale(1.9); }
+}
+.pos-ring-1 { animation: pulse-map   2.2s ease-out infinite; transform-origin: 195px 258px; }
+.pos-ring-2 { animation: pulse-map-2 2.2s ease-out infinite 0.5s; transform-origin: 195px 258px; }
+
+#s-companion-map { height: 100%; overflow: hidden; position: relative; }
+
+.map-header-bar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 20;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 0.5px solid rgba(0,0,0,0.08);
+}
+.phone[data-theme="dark"] .map-header-bar {
+  background: rgba(25,23,40,0.88);
+  border-bottom-color: rgba(255,255,255,0.07);
+}
+.map-header-title { font-size: 16px; font-weight: 700; color: var(--text); flex: 1; }
+
+.map-progress-pill {
+  position: absolute; top: 58px; left: 50%; transform: translateX(-50%);
+  z-index: 20;
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 5px 14px;
+  display: flex; align-items: center; gap: 7px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.14), 0 0 0 0.5px var(--border);
+  white-space: nowrap;
+}
+.map-progress-pill .pip-count { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text); }
+.map-progress-pill .pip-label { font-size: 11px; color: var(--text-3); font-weight: 700; }
+
+.map-center-btn {
+  position: absolute; top: 118px; right: 14px; z-index: 20;
+  width: 38px; height: 38px;
+  background: var(--surface);
+  border: none; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.14), 0 0 0 0.5px var(--border);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.map-bottom-card {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 0 0 8px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
+}
+.map-bottom-handle {
+  width: 36px; height: 4px; background: var(--border);
+  border-radius: 2px; margin: 10px auto 14px;
+}
+.map-vehicle-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px 12px;
+  border-bottom: 0.5px solid var(--border-2);
+}
+.map-vehicle-info { flex: 1; }
+.map-vehicle-line { font-size: 16px; font-weight: 700; color: var(--text); }
+.map-vehicle-sub  { font-size: 13px; color: var(--text-2); margin-top: 1px; }
+.map-vehicle-eta  { text-align: right; }
+.map-vehicle-eta-val   { font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; color: var(--text); }
+.map-vehicle-eta-label { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+
+.map-next-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px 6px;
+}
+.map-next-dot  { width: 10px; height: 10px; border-radius: 50%; border: 2.5px solid #D05C08; flex-shrink: 0; }
+.map-next-name { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); }
+.map-next-eta  { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--text-3); }
+
+.map-transfer-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 16px 8px;
+  margin: 0 10px;
+  background: var(--brand-dim);
+  border-radius: 9px;
+}
+.map-transfer-text { flex: 1; font-size: 12px; font-weight: 700; color: var(--brand-text); }
+.map-transfer-time { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--brand); font-weight: 700; }
+</style>
+
+<script>
+const TAB_MAP = {
+  's-home': 0, 's-import': 1, 's-import-progress': 1,
+  's-config': 1, 's-computing': 1, 's-warnings': 1,
+  's-options': 1, 's-route-detail': 1, 's-itinerary': 1,
+  's-companion': 2, 's-companion-map': 2, 's-settings': 3
+};
+
+let currentScreen = 's-home';
+
+function go(id, tabIndex) {
+  currentScreen = id;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('screen-area').scrollTop = 0;
+  const ti = tabIndex !== undefined ? tabIndex : (TAB_MAP[id] ?? 0);
+  updateNav(ti);
+}
+
+function updateNav(activeIndex) {
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById('nav-' + i);
+    if (el) el.classList.toggle('active', i === activeIndex);
+  });
+}
+
+function jumpTo(id, tabIndex) {
+  go(id, tabIndex);
+  document.querySelectorAll('.snav-btn').forEach(b => b.classList.remove('current'));
+  event.currentTarget.classList.add('current');
+}
+
+document.querySelectorAll('.snav-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.snav-btn').forEach(b => b.classList.remove('current'));
+    this.classList.add('current');
+  });
+});
+
+// Segment control
+document.querySelectorAll('.seg-ctrl').forEach(ctrl => {
+  ctrl.querySelectorAll('.seg-opt').forEach(opt => {
+    opt.addEventListener('click', function() {
+      ctrl.querySelectorAll('.seg-opt').forEach(o => o.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+});
+
+// Detail tabs
+function detailTab(name, el) {
+  document.querySelectorAll('#detail-tabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('dt-timeline').style.display = name === 'timeline' ? '' : 'none';
+  document.getElementById('dt-map').style.display      = name === 'map'      ? '' : 'none';
+  document.getElementById('dt-legs').style.display     = name === 'legs'     ? '' : 'none';
+}
+
+// Theme toggle
+let isDark = false;
+function toggleTheme() {
+  isDark = !isDark;
+  document.getElementById('phone').dataset.theme = isDark ? 'dark' : 'light';
+  document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+  const btn = document.getElementById('theme-toggle');
+  btn.textContent = isDark ? '☀️ Light mode' : '🌙 Dark mode';
+  const dt = document.getElementById('dark-toggle');
+  if (dt) dt.classList.toggle('on', isDark);
+}
+
+go('s-home', 0);
+</script>
+</body>
+</html>
