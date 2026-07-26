@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, Pressable, StyleSheet,
-  Alert, useColorScheme, TextInput,
+  Alert, useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
@@ -9,32 +9,65 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { importGtfsFeed } from '../../src/gtfs/import';
 import { buildGraph, nextDateForDayOfWeek } from '../../src/graph/build';
 import { setCurrentGraph } from '../../src/graph/store';
+import { solve } from '../../src/solver/solve';
+import { schedule } from '../../src/solver/schedule';
 import { ProgressIndicator } from '../../src/components/ProgressIndicator';
 import { FeedChip } from '../../src/components/FeedChip';
+import { TimePicker } from '../../src/components/TimePicker';
 import type { ImportProgress, ImportSummary } from '../../src/gtfs/types';
 import type { GraphBuildProgress, CompressedGraph, DayOfWeek } from '../../src/graph/types';
+import type { PlannedRoute, ScheduledLeg, ScheduledRoute } from '../../src/solver/types';
 
 type FeedEntry = ImportSummary & { type: 'primary' | 'auxiliary' };
-type Phase = 'idle' | 'importing' | 'imported' | 'building' | 'built';
+type Phase =
+  | 'idle' | 'importing' | 'imported'
+  | 'building' | 'built'
+  | 'solving' | 'solved'
+  | 'scheduling' | 'scheduled';
 
 const DAYS: { key: DayOfWeek; label: string }[] = [
-  { key: 'monday', label: 'Mon' },
-  { key: 'tuesday', label: 'Tue' },
-  { key: 'wednesday', label: 'Wed' },
+  { key: 'monday',    label: 'Mon' },
+  { key: 'tuesday',  label: 'Tue' },
+  { key: 'wednesday',label: 'Wed' },
   { key: 'thursday', label: 'Thu' },
-  { key: 'friday', label: 'Fri' },
+  { key: 'friday',   label: 'Fri' },
   { key: 'saturday', label: 'Sat' },
-  { key: 'sunday', label: 'Sun' },
+  { key: 'sunday',   label: 'Sun' },
 ];
 
-function isValidTime(t: string): boolean {
-  return /^\d{1,2}:\d{2}$/.test(t);
+function fmtDuration(secs: number): string {
+  const m = Math.round(secs / 60);
+  const h = Math.floor(m / 60);
+  return h > 0 ? `${h}h ${m % 60}m` : `${m}m`;
 }
 
 function formatDate(yyyymmdd: string): string {
   return `${yyyymmdd.slice(0, 4)}-${yyyymmdd.slice(4, 6)}-${yyyymmdd.slice(6, 8)}`;
 }
 
+// Merge consecutive transit legs where the rider stays on the same vehicle.
+// Each merged-away leg contributes its intermediates + 1 (for the junction stop itself).
+function mergeLegsForDisplay(legs: ScheduledLeg[]): ScheduledLeg[] {
+  const result: ScheduledLeg[] = [];
+  for (const leg of legs) {
+    if (leg.type === 'transit' && leg.stayOnBoard && result.length > 0) {
+      const prev = result[result.length - 1];
+      if (prev.type === 'transit') {
+        result[result.length - 1] = {
+          ...prev,
+          toStationId: leg.toStationId,
+          toStationName: leg.toStationName,
+          arrivalTime: leg.arrivalTime,
+          intermediateCount: prev.intermediateCount + 1 + leg.intermediateCount,
+          isImpossible: prev.isImpossible || leg.isImpossible,
+        };
+        continue;
+      }
+    }
+    result.push({ ...leg });
+  }
+  return result;
+}
 
 export default function PlanScreen() {
   const db = useSQLiteContext();
@@ -44,6 +77,7 @@ export default function PlanScreen() {
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [progress, setProgress] = useState<ImportProgress | GraphBuildProgress | null>(null);
+  const [asyncMsg, setAsyncMsg] = useState('');
   const [feeds, setFeeds] = useState<FeedEntry[]>([]);
 
   const [dayOfWeek, setDayOfWeek] = useState<DayOfWeek>('monday');
@@ -51,9 +85,13 @@ export default function PlanScreen() {
   const [windowEnd, setWindowEnd] = useState('18:00');
 
   const [graphResult, setGraphResult] = useState<CompressedGraph | null>(null);
+  const [solutions, setSolutions] = useState<PlannedRoute[]>([]);
+  const [scheduledRoute, setScheduledRoute] = useState<ScheduledRoute | null>(null);
 
   const hasPrimary = feeds.some((f) => f.type === 'primary');
   const primaryFeed = feeds.find((f) => f.type === 'primary');
+
+  // ── Import ──────────────────────────────────────────────────────────────────
 
   const pickAndImport = useCallback(async (type: 'primary' | 'auxiliary') => {
     const result = await DocumentPicker.getDocumentAsync({
@@ -69,13 +107,12 @@ export default function PlanScreen() {
     setProgress({ step: 1, totalSteps: 7, label: 'Starting import…' });
 
     try {
-      const summary = await importGtfsFeed(
-        db, asset.uri, feedName, type,
-        (p) => setProgress(p),
-      );
+      const summary = await importGtfsFeed(db, asset.uri, feedName, type, setProgress);
       setFeeds((prev) => [...prev, { ...summary, type }]);
       setPhase('imported');
       setGraphResult(null);
+      setSolutions([]);
+      setScheduledRoute(null);
     } catch (err: any) {
       setPhase(feeds.length > 0 ? 'imported' : 'idle');
       Alert.alert('Import failed', err?.message ?? 'Unknown error');
@@ -88,33 +125,37 @@ export default function PlanScreen() {
       if (!next.some((f) => f.type === 'primary')) {
         setPhase('idle');
         setGraphResult(null);
+        setSolutions([]);
+        setScheduledRoute(null);
       }
       return next;
     });
   }, []);
 
+  // ── Graph build ──────────────────────────────────────────────────────────────
+
   const startBuildGraph = useCallback(async () => {
     if (!primaryFeed) return;
-
-    if (!isValidTime(windowStart) || !isValidTime(windowEnd)) {
-      Alert.alert('Invalid time', 'Enter times in HH:MM format (e.g. 09:00).');
-      return;
-    }
     if (windowStart >= windowEnd) {
       Alert.alert('Invalid window', 'End time must be after start time.');
       return;
     }
 
     const date = nextDateForDayOfWeek(dayOfWeek);
-
     setPhase('building');
     setProgress({ step: 1, totalSteps: 5, label: 'Starting…' });
+    setSolutions([]);
+    setScheduledRoute(null);
 
     try {
+      const auxiliaryFeedIds = feeds
+        .filter((f) => f.type === 'auxiliary')
+        .map((f) => f.feedId);
+
       const graph = await buildGraph(
         db,
-        { feedId: primaryFeed.feedId, feedName: primaryFeed.feedName, dayOfWeek, date, windowStart, windowEnd },
-        (p) => setProgress(p),
+        { feedId: primaryFeed.feedId, feedName: primaryFeed.feedName, auxiliaryFeedIds, dayOfWeek, date, windowStart, windowEnd },
+        setProgress,
       );
       setCurrentGraph(graph);
       setGraphResult(graph);
@@ -125,6 +166,51 @@ export default function PlanScreen() {
     }
   }, [db, primaryFeed, dayOfWeek, windowStart, windowEnd]);
 
+  // ── Solver ───────────────────────────────────────────────────────────────────
+
+  const startSolve = useCallback(async () => {
+    if (!graphResult) return;
+    setPhase('solving');
+    setAsyncMsg('Initialising…');
+    setSolutions([]);
+    setScheduledRoute(null);
+
+    try {
+      const routes = await solve(graphResult, { maxSolutions: 3 }, setAsyncMsg);
+      setSolutions(routes);
+      setPhase('solved');
+    } catch (err: any) {
+      setPhase('built');
+      Alert.alert('Solver failed', err?.message ?? 'Unknown error');
+    }
+  }, [graphResult]);
+
+  // ── Scheduler ────────────────────────────────────────────────────────────────
+
+  const startSchedule = useCallback(async (solution: PlannedRoute) => {
+    if (!graphResult) return;
+    setPhase('scheduling');
+    setAsyncMsg('Starting…');
+
+    try {
+      const result = await schedule(db, solution, graphResult, setAsyncMsg);
+      setScheduledRoute(result);
+      setPhase('scheduled');
+    } catch (err: any) {
+      setPhase('solved');
+      Alert.alert('Scheduling failed', err?.message ?? 'Unknown error');
+    }
+  }, [db, graphResult]);
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+
+  const showingAsyncProgress = phase === 'solving' || phase === 'scheduling';
+  const showingImportProgress = phase === 'importing' || phase === 'building';
+  const showConfig = hasPrimary && (phase === 'imported' || phase === 'built');
+  const showGraphResults = phase === 'built' && graphResult !== null;
+  const showImportActions = !showingImportProgress && !showingAsyncProgress
+    && phase !== 'solved' && phase !== 'scheduled';
+
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       <View style={s.header}>
@@ -133,8 +219,8 @@ export default function PlanScreen() {
 
       <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
 
-        {/* Imported feeds */}
-        {feeds.length > 0 && (
+        {/* Feeds */}
+        {feeds.length > 0 && phase !== 'solved' && phase !== 'scheduled' && (
           <View style={s.section}>
             <Text style={s.sectionLabel}>LOADED FEEDS</Text>
             {feeds.map((f) => (
@@ -143,18 +229,29 @@ export default function PlanScreen() {
           </View>
         )}
 
-        {/* Import/build progress */}
-        {(phase === 'importing' || phase === 'building') && progress && (
+        {/* Import progress / graph build progress */}
+        {(showingImportProgress) && progress && (
           <View style={s.section}>
             <ProgressIndicator progress={progress as ImportProgress} />
           </View>
         )}
 
+        {/* Solver / scheduler spinner */}
+        {showingAsyncProgress && (
+          <View style={s.section}>
+            <View style={s.spinnerCard}>
+              <Text style={s.spinnerTitle}>
+                {phase === 'solving' ? 'Computing optimal routes…' : 'Scheduling real trips…'}
+              </Text>
+              {asyncMsg ? <Text style={s.spinnerDetail}>{asyncMsg}</Text> : null}
+            </View>
+          </View>
+        )}
+
         {/* Import actions */}
-        {phase !== 'importing' && phase !== 'building' && (
+        {showImportActions && (
           <View style={s.section}>
             <Text style={s.sectionLabel}>GTFS ARCHIVES</Text>
-
             {!hasPrimary && (
               <Pressable style={[s.fileZone, s.fileZonePrimary]} onPress={() => pickAndImport('primary')}>
                 <Text style={s.fileZoneIcon}>📂</Text>
@@ -162,140 +259,11 @@ export default function PlanScreen() {
                 <Text style={s.fileZoneSub}>The mode you want to complete (e.g. trams)</Text>
               </Pressable>
             )}
-
             {hasPrimary && (
               <Pressable style={s.fileZone} onPress={() => pickAndImport('auxiliary')}>
                 <Text style={s.fileZoneIcon}>➕</Text>
                 <Text style={s.fileZoneTitle}>Add Auxiliary Feed</Text>
                 <Text style={s.fileZoneSub}>Optional — buses, metro, etc. for repositioning</Text>
-              </Pressable>
-            )}
-          </View>
-        )}
-
-        {/* Configure section */}
-        {hasPrimary && (phase === 'imported' || phase === 'built') && (
-          <View style={s.section}>
-            <Text style={s.sectionLabel}>CONFIGURE</Text>
-            <View style={s.configCard}>
-
-              <Text style={s.configLabel}>Day of week</Text>
-              <View style={s.dayRow}>
-                {DAYS.map(({ key, label }) => (
-                  <Pressable
-                    key={key}
-                    style={[s.dayBtn, dayOfWeek === key && s.dayBtnSelected]}
-                    onPress={() => setDayOfWeek(key)}
-                  >
-                    <Text style={[s.dayBtnText, dayOfWeek === key && s.dayBtnTextSelected]}>
-                      {label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <Text style={[s.configLabel, { marginTop: 14 }]}>Time window</Text>
-              <View style={s.timeRow}>
-                <View style={s.timeField}>
-                  <Text style={s.timeLabel}>From</Text>
-                  <TextInput
-                    style={s.timeInput}
-                    value={windowStart}
-                    onChangeText={setWindowStart}
-                    placeholder="09:00"
-                    placeholderTextColor={dark ? '#524E62' : '#B0ADC0'}
-                    maxLength={5}
-                    keyboardType="numbers-and-punctuation"
-                    autoCorrect={false}
-                  />
-                </View>
-                <Text style={s.timeSep}>→</Text>
-                <View style={s.timeField}>
-                  <Text style={s.timeLabel}>To</Text>
-                  <TextInput
-                    style={s.timeInput}
-                    value={windowEnd}
-                    onChangeText={setWindowEnd}
-                    placeholder="18:00"
-                    placeholderTextColor={dark ? '#524E62' : '#B0ADC0'}
-                    maxLength={5}
-                    keyboardType="numbers-and-punctuation"
-                    autoCorrect={false}
-                  />
-                </View>
-              </View>
-
-              <Pressable style={s.buildBtn} onPress={startBuildGraph}>
-                <Text style={s.buildBtnText}>
-                  {phase === 'built' ? 'Rebuild Graph' : 'Build Graph →'}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-
-        {/* Graph results */}
-        {phase === 'built' && graphResult && (
-          <View style={s.section}>
-            <Text style={s.sectionLabel}>GRAPH RESULTS</Text>
-            <View style={s.resultCard}>
-              <Text style={s.resultTitle}>
-                {graphResult.config.feedName} — {graphResult.config.dayOfWeek.charAt(0).toUpperCase() + graphResult.config.dayOfWeek.slice(1)}{' '}
-                {graphResult.config.windowStart}–{graphResult.config.windowEnd}
-              </Text>
-              <Text style={s.resultDate}>Date used: {formatDate(graphResult.config.date)}</Text>
-
-              <View style={s.statsGrid}>
-                <StatBox label="Stations" value={graphResult.stations.size} s={s} />
-                <StatBox label="Served" value={graphResult.servedStationCount} s={s} />
-                <StatBox label="Nodes" value={graphResult.nodes.size} s={s} />
-                <StatBox label="Edges" value={graphResult.edges.length} s={s} />
-              </View>
-
-              {graphResult.nodes.size > 0 && (
-                <View style={s.nodeBreakdown}>
-                  <Text style={s.nodeBreakdownText}>
-                    {[...graphResult.nodes.values()].filter((n) => n.role === 'terminus').length} termini,{' '}
-                    {[...graphResult.nodes.values()].filter((n) => n.role === 'junction').length} junctions
-                  </Text>
-                </View>
-              )}
-
-              {graphResult.nodes.size === 0 && (
-                <Text style={s.warnText}>
-                  No active services found for this day and time window. Try a different day or wider window.
-                </Text>
-              )}
-            </View>
-
-            {graphResult.unservedStationIds.length > 0 && (
-              <View style={[s.resultCard, s.warnCard]}>
-                <Text style={s.warnTitle}>
-                  {graphResult.unservedStationIds.length} unserved station{graphResult.unservedStationIds.length !== 1 ? 's' : ''} in this window
-                </Text>
-                <Text style={s.warnSub}>These stops have no trips during your chosen hours.</Text>
-                {graphResult.unservedStationIds.slice(0, 12).map((id) => {
-                  const st = graphResult.stations.get(id);
-                  return (
-                    <Text key={id} style={s.unservedItem}>
-                      • {st?.name ?? id}
-                    </Text>
-                  );
-                })}
-                {graphResult.unservedStationIds.length > 12 && (
-                  <Text style={s.unservedMore}>
-                    +{graphResult.unservedStationIds.length - 12} more
-                  </Text>
-                )}
-              </View>
-            )}
-
-            {graphResult.nodes.size > 0 && (
-              <Pressable
-                style={s.ctaPrimary}
-                onPress={() => Alert.alert('Coming soon', 'Route solver is Milestone 3.')}
-              >
-                <Text style={s.ctaPrimaryText}>Find Optimal Route →</Text>
               </Pressable>
             )}
           </View>
@@ -313,9 +281,205 @@ export default function PlanScreen() {
           </View>
         )}
 
+        {/* Configure */}
+        {showConfig && (
+          <View style={s.section}>
+            <Text style={s.sectionLabel}>CONFIGURE</Text>
+            <View style={s.configCard}>
+              <Text style={s.configLabel}>Day of week</Text>
+              <View style={s.dayRow}>
+                {DAYS.map(({ key, label }) => (
+                  <Pressable
+                    key={key}
+                    style={[s.dayBtn, dayOfWeek === key && s.dayBtnSelected]}
+                    onPress={() => setDayOfWeek(key)}
+                  >
+                    <Text style={[s.dayBtnText, dayOfWeek === key && s.dayBtnTextSelected]}>
+                      {label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text style={[s.configLabel, { marginTop: 14 }]}>Time window</Text>
+              <View style={s.timeRow}>
+                <TimePicker label="From" value={windowStart} onChange={setWindowStart} />
+                <Text style={s.timeSep}>→</Text>
+                <TimePicker label="To" value={windowEnd} onChange={setWindowEnd} />
+              </View>
+
+              <Pressable style={s.buildBtn} onPress={startBuildGraph}>
+                <Text style={s.buildBtnText}>
+                  {phase === 'built' ? 'Rebuild Graph' : 'Build Graph →'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Graph results */}
+        {showGraphResults && graphResult && (
+          <View style={s.section}>
+            <Text style={s.sectionLabel}>GRAPH RESULTS</Text>
+            <View style={s.resultCard}>
+              <Text style={s.resultTitle}>
+                {graphResult.config.feedName} — {capitalize(graphResult.config.dayOfWeek)}{' '}
+                {graphResult.config.windowStart}–{graphResult.config.windowEnd}
+              </Text>
+              <Text style={s.resultDate}>Date used: {formatDate(graphResult.config.date)}</Text>
+
+              <View style={s.statsGrid}>
+                <StatBox label="Stations" value={graphResult.stations.size} s={s} />
+                <StatBox label="Served"   value={graphResult.servedStationCount} s={s} />
+                <StatBox label="Nodes"    value={graphResult.nodes.size} s={s} />
+                <StatBox label="Edges"    value={graphResult.edges.length} s={s} />
+              </View>
+
+              <Text style={s.nodeBreakdownText}>
+                {countRole(graphResult.nodes, 'terminus')} termini,{' '}
+                {countRole(graphResult.nodes, 'junction')} junctions
+              </Text>
+
+              {graphResult.nodes.size === 0 && (
+                <Text style={s.warnText}>
+                  No active services found for this day and time window. Try a different day or wider window.
+                </Text>
+              )}
+            </View>
+
+            {graphResult.unservedStationIds.length > 0 && (
+              <View style={[s.resultCard, s.warnCard]}>
+                <Text style={s.warnTitle}>
+                  {graphResult.unservedStationIds.length} unserved station{graphResult.unservedStationIds.length !== 1 ? 's' : ''}
+                </Text>
+                <Text style={s.warnSub}>These stops have no trips during your chosen hours.</Text>
+                {graphResult.unservedStationIds.slice(0, 10).map((id) => (
+                  <Text key={id} style={s.unservedItem}>• {graphResult.stations.get(id)?.name ?? id}</Text>
+                ))}
+                {graphResult.unservedStationIds.length > 10 && (
+                  <Text style={s.unservedMore}>+{graphResult.unservedStationIds.length - 10} more</Text>
+                )}
+              </View>
+            )}
+
+            {graphResult.nodes.size > 0 && (
+              <Pressable style={s.ctaPrimary} onPress={startSolve}>
+                <Text style={s.ctaPrimaryText}>Find Optimal Route →</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {/* Solution cards */}
+        {phase === 'solved' && (
+          <View style={s.section}>
+            <View style={s.solvedHeader}>
+              <Text style={s.sectionLabel}>ROUTE OPTIONS</Text>
+              <Pressable onPress={() => setPhase('built')}>
+                <Text style={s.backLink}>← Back</Text>
+              </Pressable>
+            </View>
+            {solutions.length === 0 && (
+              <Text style={s.warnText}>No routes found. Try a wider time window.</Text>
+            )}
+            {solutions.map((sol, idx) => (
+              <View key={idx} style={[s.solutionCard, sol.isUserPreferred && s.solutionCardPreferred]}>
+                <View style={s.solutionRow}>
+                  <Text style={s.solutionRank}>#{idx + 1}</Text>
+                  {sol.isUserPreferred && <Text style={s.preferredBadge}>Your start</Text>}
+                  {!sol.isComplete && <Text style={s.incompleteBadge}>Incomplete</Text>}
+                </View>
+                <Text style={s.solutionStart}>Start: {sol.startName}</Text>
+                <Text style={s.solutionTime}>{fmtDuration(sol.totalEstimatedSecs)} estimated</Text>
+                <Text style={s.solutionDetail}>
+                  {sol.legs.length} segment{sol.legs.length !== 1 ? 's' : ''}
+                  {sol.legs.filter((l) => l.repositionFromId !== null).length > 0
+                    ? ` · ${sol.legs.filter((l) => l.repositionFromId !== null).length} repositioning move${sol.legs.filter((l) => l.repositionFromId !== null).length !== 1 ? 's' : ''}`
+                    : ''}
+                </Text>
+                <Pressable style={s.scheduleBtn} onPress={() => startSchedule(sol)}>
+                  <Text style={s.scheduleBtnText}>Schedule This Route →</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Scheduled itinerary */}
+        {phase === 'scheduled' && scheduledRoute && (
+          <View style={s.section}>
+            <View style={s.solvedHeader}>
+              <Text style={s.sectionLabel}>ITINERARY</Text>
+              <Pressable onPress={() => setPhase('solved')}>
+                <Text style={s.backLink}>← Routes</Text>
+              </Pressable>
+            </View>
+
+            <View style={s.itinerarySummary}>
+              <Text style={s.itinTime}>
+                {scheduledRoute.actualDepartureTime} → {scheduledRoute.actualArrivalTime}
+              </Text>
+              <Text style={s.itinDuration}>
+                {fmtDuration(scheduledRoute.totalActualSecs)}
+              </Text>
+              {scheduledRoute.impossibleCount > 0 && (
+                <Text style={s.itinWarn}>
+                  ⚠ {scheduledRoute.impossibleCount} leg{scheduledRoute.impossibleCount !== 1 ? 's' : ''} with no trip found
+                </Text>
+              )}
+            </View>
+
+            {mergeLegsForDisplay(scheduledRoute.legs).map((leg, idx) => (
+              <View key={idx} style={[s.legRow, leg.isImpossible && s.legRowImpossible]}>
+                {leg.type === 'reposition' ? (
+                  <>
+                    <Text style={s.legTime}>{leg.departureTime}</Text>
+                    <View style={s.legBody}>
+                      <Text style={s.legStation}>{leg.fromStationName}</Text>
+                      <Text style={s.legRoute}>↪ Reposition / walk (~{fmtDuration(
+                        (parseInt(leg.arrivalTime.split(':')[0], 10) * 3600 + parseInt(leg.arrivalTime.split(':')[1], 10) * 60) -
+                        (parseInt(leg.departureTime.split(':')[0], 10) * 3600 + parseInt(leg.departureTime.split(':')[1], 10) * 60)
+                      )})</Text>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Text style={[s.legTime, leg.isImpossible && s.legTimeWarn]}>
+                      {leg.departureTime}
+                    </Text>
+                    <View style={s.legBody}>
+                      <Text style={s.legStation}>{leg.fromStationName}</Text>
+                      <Text style={s.legRoute}>
+                        {leg.isImpossible ? '⚠ No trip found · ' : ''}
+                        {leg.routeShortName ? `Line ${leg.routeShortName}` : 'Line ?'}
+                        {leg.tripHeadsign ? ` → ${leg.tripHeadsign}` : ''}
+                        {leg.intermediateCount > 0 ? ` (${leg.intermediateCount} stop${leg.intermediateCount !== 1 ? 's' : ''})` : ''}
+                      </Text>
+                      <Text style={s.legArrStation}>
+                        <Text style={s.legArrTime}>{leg.arrivalTime} </Text>
+                        {leg.toStationName}
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
       </ScrollView>
     </View>
   );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function countRole(nodes: CompressedGraph['nodes'], role: 'terminus' | 'junction'): number {
+  return [...nodes.values()].filter((n) => n.role === role).length;
 }
 
 function StatBox({ label, value, s }: { label: string; value: number; s: typeof lightStyles }) {
@@ -326,6 +490,8 @@ function StatBox({ label, value, s }: { label: string; value: number; s: typeof 
     </View>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const base = StyleSheet.create({
   root: { flex: 1 },
@@ -343,6 +509,9 @@ const base = StyleSheet.create({
   fileZoneIcon: { fontSize: 28 },
   fileZoneTitle: { fontSize: 16, fontWeight: '700' },
   fileZoneSub: { fontSize: 12, textAlign: 'center' },
+  spinnerCard: { borderRadius: 14, padding: 20, alignItems: 'center', gap: 8 },
+  spinnerTitle: { fontSize: 16, fontWeight: '700' },
+  spinnerDetail: { fontSize: 13 },
   configCard: { borderRadius: 14, padding: 16, marginBottom: 10 },
   configLabel: { fontSize: 12, fontWeight: '600', letterSpacing: 0.3, marginBottom: 8 },
   dayRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
@@ -350,14 +519,8 @@ const base = StyleSheet.create({
   dayBtnSelected: { borderWidth: 0 },
   dayBtnText: { fontSize: 13, fontWeight: '600' },
   dayBtnTextSelected: { color: '#fff' },
-  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  timeField: { flex: 1, gap: 4 },
-  timeLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
-  timeInput: {
-    borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10,
-    fontSize: 16, fontWeight: '600', fontVariant: ['tabular-nums'],
-  },
-  timeSep: { fontSize: 16, marginTop: 16 },
+  timeRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
+  timeSep: { fontSize: 16, paddingBottom: 13 },
   buildBtn: {
     marginTop: 16, borderRadius: 12, paddingVertical: 12,
     alignItems: 'center', backgroundColor: '#1A56C4',
@@ -366,11 +529,10 @@ const base = StyleSheet.create({
   resultCard: { borderRadius: 14, padding: 16, marginBottom: 10 },
   resultTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
   resultDate: { fontSize: 12, marginBottom: 12 },
-  statsGrid: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  statsGrid: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   statBox: { flex: 1, borderRadius: 10, padding: 10, alignItems: 'center' },
   statValue: { fontSize: 20, fontWeight: '800', fontVariant: ['tabular-nums'] },
   statLabel: { fontSize: 11, marginTop: 2 },
-  nodeBreakdown: { gap: 2 },
   nodeBreakdownText: { fontSize: 13 },
   warnCard: {},
   warnTitle: { fontSize: 14, fontWeight: '700', marginBottom: 4 },
@@ -383,6 +545,41 @@ const base = StyleSheet.create({
     padding: 16, alignItems: 'center', marginTop: 4,
   },
   ctaPrimaryText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  solvedHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  backLink: { fontSize: 14, fontWeight: '600' },
+  solutionCard: { borderRadius: 14, padding: 16, marginBottom: 10, gap: 4 },
+  solutionCardPreferred: {},
+  solutionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  solutionRank: { fontSize: 13, fontWeight: '800' },
+  preferredBadge: {
+    fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 2,
+    borderRadius: 6, overflow: 'hidden',
+  },
+  incompleteBadge: {
+    fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 2,
+    borderRadius: 6, overflow: 'hidden',
+  },
+  solutionStart: { fontSize: 13 },
+  solutionTime: { fontSize: 20, fontWeight: '800' },
+  solutionDetail: { fontSize: 12 },
+  scheduleBtn: {
+    marginTop: 10, borderRadius: 10, paddingVertical: 10,
+    alignItems: 'center', backgroundColor: '#1A56C4',
+  },
+  scheduleBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  itinerarySummary: { borderRadius: 14, padding: 16, marginBottom: 10, gap: 4 },
+  itinTime: { fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  itinDuration: { fontSize: 28, fontWeight: '800' },
+  itinWarn: { fontSize: 13, marginTop: 4 },
+  legRow: { borderRadius: 12, padding: 12, marginBottom: 6, flexDirection: 'row', gap: 12 },
+  legRowImpossible: {},
+  legTime: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'], width: 44 },
+  legTimeWarn: {},
+  legBody: { flex: 1, gap: 2 },
+  legStation: { fontSize: 14, fontWeight: '700' },
+  legRoute: { fontSize: 12 },
+  legArrStation: { fontSize: 13, marginTop: 4 },
+  legArrTime: { fontWeight: '700', fontVariant: ['tabular-nums'] },
   emptyState: { alignItems: 'center', paddingHorizontal: 32, paddingTop: 60, gap: 12 },
   emptyIcon: { fontSize: 48 },
   emptyTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
@@ -398,13 +595,14 @@ const lightStyles = StyleSheet.create({
   fileZone: { ...base.fileZone, borderColor: '#C8C5D8', backgroundColor: '#FFFFFF' },
   fileZoneTitle: { ...base.fileZoneTitle, color: '#111018' },
   fileZoneSub: { ...base.fileZoneSub, color: '#6B6880' },
+  spinnerCard: { ...base.spinnerCard, backgroundColor: '#FFFFFF' },
+  spinnerTitle: { ...base.spinnerTitle, color: '#111018' },
+  spinnerDetail: { ...base.spinnerDetail, color: '#6B6880' },
   configCard: { ...base.configCard, backgroundColor: '#FFFFFF' },
   configLabel: { ...base.configLabel, color: '#6B6880' },
   dayBtn: { ...base.dayBtn, borderColor: '#C8C5D8', backgroundColor: '#F4F3F7' },
   dayBtnSelected: { ...base.dayBtnSelected, backgroundColor: '#1A56C4' },
   dayBtnText: { ...base.dayBtnText, color: '#111018' },
-  timeLabel: { ...base.timeLabel, color: '#6B6880' },
-  timeInput: { ...base.timeInput, borderColor: '#C8C5D8', backgroundColor: '#F4F3F7', color: '#111018' },
   timeSep: { ...base.timeSep, color: '#938FA6' },
   resultCard: { ...base.resultCard, backgroundColor: '#FFFFFF' },
   resultTitle: { ...base.resultTitle, color: '#111018' },
@@ -419,6 +617,27 @@ const lightStyles = StyleSheet.create({
   warnText: { ...base.warnText, color: '#6B6880' },
   unservedItem: { ...base.unservedItem, color: '#7A5800' },
   unservedMore: { ...base.unservedMore, color: '#938FA6' },
+  backLink: { ...base.backLink, color: '#1A56C4' },
+  solutionCard: { ...base.solutionCard, backgroundColor: '#FFFFFF' },
+  solutionCardPreferred: { ...base.solutionCardPreferred, borderWidth: 1.5, borderColor: '#1A56C4' },
+  solutionRank: { ...base.solutionRank, color: '#111018' },
+  preferredBadge: { ...base.preferredBadge, backgroundColor: '#E6EEFF', color: '#1A56C4' },
+  incompleteBadge: { ...base.incompleteBadge, backgroundColor: '#FFF0CC', color: '#7A5800' },
+  solutionStart: { ...base.solutionStart, color: '#6B6880' },
+  solutionTime: { ...base.solutionTime, color: '#111018' },
+  solutionDetail: { ...base.solutionDetail, color: '#938FA6' },
+  itinerarySummary: { ...base.itinerarySummary, backgroundColor: '#FFFFFF' },
+  itinTime: { ...base.itinTime, color: '#6B6880' },
+  itinDuration: { ...base.itinDuration, color: '#111018' },
+  itinWarn: { ...base.itinWarn, color: '#7A5800' },
+  legRow: { ...base.legRow, backgroundColor: '#FFFFFF' },
+  legRowImpossible: { ...base.legRowImpossible, backgroundColor: '#FFF8E6' },
+  legTime: { ...base.legTime, color: '#1A56C4' },
+  legTimeWarn: { ...base.legTimeWarn, color: '#7A5800' },
+  legStation: { ...base.legStation, color: '#111018' },
+  legRoute: { ...base.legRoute, color: '#6B6880' },
+  legArrStation: { ...base.legArrStation, color: '#6B6880' },
+  legArrTime: { ...base.legArrTime, color: '#111018' },
   emptyTitle: { ...base.emptyTitle, color: '#111018' },
   emptyBody: { ...base.emptyBody, color: '#6B6880' },
 });
@@ -432,13 +651,14 @@ const darkStyles = StyleSheet.create({
   fileZone: { ...base.fileZone, borderColor: '#2A2840', backgroundColor: '#191728' },
   fileZoneTitle: { ...base.fileZoneTitle, color: '#F0EFF8' },
   fileZoneSub: { ...base.fileZoneSub, color: '#8A86A0' },
+  spinnerCard: { ...base.spinnerCard, backgroundColor: '#191728' },
+  spinnerTitle: { ...base.spinnerTitle, color: '#F0EFF8' },
+  spinnerDetail: { ...base.spinnerDetail, color: '#8A86A0' },
   configCard: { ...base.configCard, backgroundColor: '#191728' },
   configLabel: { ...base.configLabel, color: '#8A86A0' },
   dayBtn: { ...base.dayBtn, borderColor: '#2A2840', backgroundColor: '#0D0C18' },
   dayBtnSelected: { ...base.dayBtnSelected, backgroundColor: '#1A56C4' },
   dayBtnText: { ...base.dayBtnText, color: '#F0EFF8' },
-  timeLabel: { ...base.timeLabel, color: '#8A86A0' },
-  timeInput: { ...base.timeInput, borderColor: '#2A2840', backgroundColor: '#0D0C18', color: '#F0EFF8' },
   timeSep: { ...base.timeSep, color: '#524E62' },
   resultCard: { ...base.resultCard, backgroundColor: '#191728' },
   resultTitle: { ...base.resultTitle, color: '#F0EFF8' },
@@ -453,6 +673,27 @@ const darkStyles = StyleSheet.create({
   warnText: { ...base.warnText, color: '#8A86A0' },
   unservedItem: { ...base.unservedItem, color: '#C4A820' },
   unservedMore: { ...base.unservedMore, color: '#524E62' },
+  backLink: { ...base.backLink, color: '#4E80F0' },
+  solutionCard: { ...base.solutionCard, backgroundColor: '#191728' },
+  solutionCardPreferred: { ...base.solutionCardPreferred, borderWidth: 1.5, borderColor: '#4E80F0' },
+  solutionRank: { ...base.solutionRank, color: '#F0EFF8' },
+  preferredBadge: { ...base.preferredBadge, backgroundColor: '#0F1E3D', color: '#4E80F0' },
+  incompleteBadge: { ...base.incompleteBadge, backgroundColor: '#1C1600', color: '#E8C840' },
+  solutionStart: { ...base.solutionStart, color: '#8A86A0' },
+  solutionTime: { ...base.solutionTime, color: '#F0EFF8' },
+  solutionDetail: { ...base.solutionDetail, color: '#524E62' },
+  itinerarySummary: { ...base.itinerarySummary, backgroundColor: '#191728' },
+  itinTime: { ...base.itinTime, color: '#8A86A0' },
+  itinDuration: { ...base.itinDuration, color: '#F0EFF8' },
+  itinWarn: { ...base.itinWarn, color: '#E8C840' },
+  legRow: { ...base.legRow, backgroundColor: '#191728' },
+  legRowImpossible: { ...base.legRowImpossible, backgroundColor: '#1C1600' },
+  legTime: { ...base.legTime, color: '#4E80F0' },
+  legTimeWarn: { ...base.legTimeWarn, color: '#E8C840' },
+  legStation: { ...base.legStation, color: '#F0EFF8' },
+  legRoute: { ...base.legRoute, color: '#8A86A0' },
+  legArrStation: { ...base.legArrStation, color: '#8A86A0' },
+  legArrTime: { ...base.legArrTime, color: '#F0EFF8' },
   emptyTitle: { ...base.emptyTitle, color: '#F0EFF8' },
   emptyBody: { ...base.emptyBody, color: '#8A86A0' },
 });

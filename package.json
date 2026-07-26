@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@react-native-community/datetimepicker": "^9.1.0",
     "drizzle-orm": "^1.0.0-rc.4",
     "expo": "~54.0.36",
     "expo-constants": "~18.0.13",
     "expo-document-picker": "~14.0.8",
     "expo-file-system": "~19.0.23",
+    "expo-keep-awake": "~15.0.8",
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.24",
     "expo-sqlite": "~16.0.10",

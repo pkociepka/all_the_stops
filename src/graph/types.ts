@@ -5,6 +5,7 @@ export type DayOfWeek =
 export interface GraphConfig {
   feedId: number;
   feedName: string;
+  auxiliaryFeedIds: number[]; // additional feeds usable for repositioning
   dayOfWeek: DayOfWeek;
   date: string;        // YYYYMMDD
   windowStart: string; // HH:MM
@@ -41,6 +42,10 @@ export interface CompressedGraph {
   edges: CompressedEdge[];
   unservedStationIds: string[];
   servedStationCount: number;
+  activeServiceIds: Set<string>;
+  // Active service IDs for each auxiliary feed, keyed by feedId.
+  // Used by the scheduler when searching for repositioning transit.
+  auxiliaryServiceIds: Map<number, Set<string>>;
   config: GraphConfig;
 }
 

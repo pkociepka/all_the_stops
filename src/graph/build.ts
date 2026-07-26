@@ -67,7 +67,10 @@ async function mergeStations(
     stopToStation.set(row.stop_id, sid);
   }
 
-  // Phase B: remaining stops — group by name, then merge within 150 m (union-find)
+  // Phase B: remaining stops — group all stops with the same name into one station.
+  // Inbound/outbound platforms at the same stop often share a name but can be spread
+  // over several hundred metres; grouping by name ensures all their stop IDs are
+  // available to findNextTrip regardless of direction.
   const noParent = rows.filter((r) => !r.parent_station);
   const byName = new Map<string, typeof noParent>();
   for (const r of noParent) {
@@ -76,41 +79,32 @@ async function mergeStations(
     byName.get(key)!.push(r);
   }
 
-  for (const group of byName.values()) {
-    const n = group.length;
-    const parent = Array.from({ length: n }, (_, i) => i);
+  for (const stops of byName.values()) {
+    const sid = `st:${stops[0].stop_id}`;
+    const lat = stops.reduce((s, r) => s + r.stop_lat, 0) / stops.length;
+    const lon = stops.reduce((s, r) => s + r.stop_lon, 0) / stops.length;
+    stations.set(sid, { id: sid, name: stops[0].stop_name, lat, lon, stopIds: stops.map((s) => s.stop_id) });
+    for (const s of stops) stopToStation.set(s.stop_id, sid);
+  }
 
-    function find(i: number): number {
-      if (parent[i] !== i) parent[i] = find(parent[i]);
-      return parent[i];
-    }
+  // Phase C: cross-phase merge — if a Phase-B station has the same name and
+  // centroid within 150 m of a Phase-A station, fold its stop IDs into Phase A.
+  // This handles feeds where only some stops at a station carry parent_station.
+  const phaseAEntries = [...stations.entries()].filter(([id]) => id.startsWith('ps:'));
 
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        if (
-          haversineMeters(
-            group[i].stop_lat, group[i].stop_lon,
-            group[j].stop_lat, group[j].stop_lon,
-          ) <= 150
-        ) {
-          parent[find(i)] = find(j);
-        }
+  for (const [bId, bStation] of [...stations.entries()]) {
+    if (!bId.startsWith('st:')) continue;
+    const bName = bStation.name.toLowerCase().trim();
+    for (const [aId, aStation] of phaseAEntries) {
+      if (aStation.name.toLowerCase().trim() !== bName) continue;
+      if (haversineMeters(aStation.lat, aStation.lon, bStation.lat, bStation.lon) > 150) continue;
+      // Merge: move all stop IDs from Phase-B station into the Phase-A station
+      for (const sid of bStation.stopIds) {
+        aStation.stopIds.push(sid);
+        stopToStation.set(sid, aId);
       }
-    }
-
-    const components = new Map<number, typeof noParent>();
-    for (let i = 0; i < n; i++) {
-      const root = find(i);
-      if (!components.has(root)) components.set(root, []);
-      components.get(root)!.push(group[i]);
-    }
-
-    for (const stops of components.values()) {
-      const sid = `st:${stops[0].stop_id}`;
-      const lat = stops.reduce((s, r) => s + r.stop_lat, 0) / stops.length;
-      const lon = stops.reduce((s, r) => s + r.stop_lon, 0) / stops.length;
-      stations.set(sid, { id: sid, name: stops[0].stop_name, lat, lon, stopIds: stops.map((s) => s.stop_id) });
-      for (const s of stops) stopToStation.set(s.stop_id, sid);
+      stations.delete(bId);
+      break;
     }
   }
 
@@ -408,6 +402,13 @@ export async function buildGraph(
   onProgress({ step: 5, totalSteps: TOTAL_STEPS, label: 'Checking coverage…' });
   const unservedStationIds = [...stations.keys()].filter((id) => !servedStationIds.has(id));
 
+  // Resolve active service IDs for each auxiliary feed so the scheduler can
+  // use them when searching for repositioning transit options.
+  const auxiliaryServiceIds = new Map<number, Set<string>>();
+  for (const auxId of config.auxiliaryFeedIds) {
+    auxiliaryServiceIds.set(auxId, await getActiveServiceIds(db, auxId, config.date, config.dayOfWeek));
+  }
+
   return {
     stations,
     stopToStation,
@@ -415,6 +416,8 @@ export async function buildGraph(
     edges,
     unservedStationIds,
     servedStationCount: servedStationIds.size,
+    activeServiceIds,
+    auxiliaryServiceIds,
     config,
   };
 }
