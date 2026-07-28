@@ -24,7 +24,7 @@ export interface SolverConfig {
 }
 
 export interface ScheduledLeg {
-  type: 'transit' | 'reposition';
+  type: 'transit' | 'reposition-walk' | 'reposition-transit';
   fromStationId: string;
   fromStationName: string;
   toStationId: string;
@@ -34,6 +34,7 @@ export interface ScheduledLeg {
   arrivalTime: string;           // HH:MM
   routeShortName: string | null; // e.g. "4"
   tripHeadsign: string | null;   // e.g. "Bronowice"
+  tripId: string | null;         // GTFS trip_id; null for reposition/impossible legs
   isImpossible: boolean;         // true if no matching trip was found
   stayOnBoard: boolean;          // true if rider continues on the same vehicle (no transfer)
 }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, Pressable, StyleSheet,
   Alert, useColorScheme,
@@ -16,7 +16,8 @@ import { FeedChip } from '../../src/components/FeedChip';
 import { TimePicker } from '../../src/components/TimePicker';
 import type { ImportProgress, ImportSummary } from '../../src/gtfs/types';
 import type { GraphBuildProgress, CompressedGraph, DayOfWeek } from '../../src/graph/types';
-import type { PlannedRoute, ScheduledLeg, ScheduledRoute } from '../../src/solver/types';
+import type { PlannedRoute, RouteLeg, ScheduledLeg, ScheduledRoute } from '../../src/solver/types';
+import { RouteMap } from '../../src/components/RouteMap';
 
 type FeedEntry = ImportSummary & { type: 'primary' | 'auxiliary' };
 type Phase =
@@ -34,6 +35,43 @@ const DAYS: { key: DayOfWeek; label: string }[] = [
   { key: 'saturday', label: 'Sat' },
   { key: 'sunday',   label: 'Sun' },
 ];
+
+// Colours cycling through tram-style hues; same index → same colour across views.
+const TRANSIT_COLORS = [
+  '#C5202A', '#1450B0', '#1E7835', '#D05C08',
+  '#6A2C9E', '#0A7265', '#B8860B', '#4A5C68',
+];
+const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'];
+
+function timeToSecs(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 3600 + m * 60;
+}
+
+
+interface ItineraryPlan {
+  mergedLegs: ScheduledLeg[];
+  legColors: (string | null)[]; // index-aligned with mergedLegs; null = reposition
+}
+
+function computeItinerary(legs: ScheduledLeg[]): ItineraryPlan {
+  const colorMap = new Map<string, string>();
+  let ci = 0;
+  const mergedLegs = mergeLegsForDisplay(legs);
+  const legColors: (string | null)[] = [];
+
+  for (const leg of mergedLegs) {
+    if (leg.type !== 'transit') {
+      legColors.push(null);
+    } else {
+      const key = leg.routeShortName ?? `__${ci}`;
+      if (!colorMap.has(key)) colorMap.set(key, TRANSIT_COLORS[ci++ % TRANSIT_COLORS.length]);
+      legColors.push(colorMap.get(key)!);
+    }
+  }
+
+  return { mergedLegs, legColors };
+}
 
 function fmtDuration(secs: number): string {
   const m = Math.round(secs / 60);
@@ -87,6 +125,11 @@ export default function PlanScreen() {
   const [graphResult, setGraphResult] = useState<CompressedGraph | null>(null);
   const [solutions, setSolutions] = useState<PlannedRoute[]>([]);
   const [scheduledRoute, setScheduledRoute] = useState<ScheduledRoute | null>(null);
+  const [showMap, setShowMap] = useState(false);
+  const itinPlan = useMemo<ItineraryPlan | null>(
+    () => scheduledRoute ? computeItinerary(scheduledRoute.legs) : null,
+    [scheduledRoute],
+  );
 
   const hasPrimary = feeds.some((f) => f.type === 'primary');
   const primaryFeed = feeds.find((f) => f.type === 'primary');
@@ -329,20 +372,24 @@ export default function PlanScreen() {
               <Text style={s.resultDate}>Date used: {formatDate(graphResult.config.date)}</Text>
 
               <View style={s.statsGrid}>
+                <StatBox label="Services" value={graphResult.activeServiceIds.size} s={s} />
                 <StatBox label="Stations" value={graphResult.stations.size} s={s} />
                 <StatBox label="Served"   value={graphResult.servedStationCount} s={s} />
                 <StatBox label="Nodes"    value={graphResult.nodes.size} s={s} />
-                <StatBox label="Edges"    value={graphResult.edges.length} s={s} />
               </View>
 
               <Text style={s.nodeBreakdownText}>
-                {countRole(graphResult.nodes, 'terminus')} termini,{' '}
-                {countRole(graphResult.nodes, 'junction')} junctions
+                {graphResult.edges.length} edges · {countRole(graphResult.nodes, 'terminus')} termini · {countRole(graphResult.nodes, 'junction')} junctions
               </Text>
 
-              {graphResult.nodes.size === 0 && (
+              {graphResult.activeServiceIds.size === 0 && (
                 <Text style={s.warnText}>
-                  No active services found for this day and time window. Try a different day or wider window.
+                  No calendar entries found for {formatDate(graphResult.config.date)} ({capitalize(graphResult.config.dayOfWeek)}). Your GTFS archive may have expired — try importing a newer feed.
+                </Text>
+              )}
+              {graphResult.activeServiceIds.size > 0 && graphResult.nodes.size === 0 && (
+                <Text style={s.warnText}>
+                  No trips run within {graphResult.config.windowStart}–{graphResult.config.windowEnd}. Try a wider time window.
                 </Text>
               )}
             </View>
@@ -352,7 +399,11 @@ export default function PlanScreen() {
                 <Text style={s.warnTitle}>
                   {graphResult.unservedStationIds.length} unserved station{graphResult.unservedStationIds.length !== 1 ? 's' : ''}
                 </Text>
-                <Text style={s.warnSub}>These stops have no trips during your chosen hours.</Text>
+                <Text style={s.warnSub}>
+                  {graphResult.unservedStationIds.length === graphResult.stations.size
+                    ? 'All stations unserved — GTFS calendar may not cover this date.'
+                    : 'These stops have no trips during your chosen hours.'}
+                </Text>
                 {graphResult.unservedStationIds.slice(0, 10).map((id) => (
                   <Text key={id} style={s.unservedItem}>• {graphResult.stations.get(id)?.name ?? id}</Text>
                 ))}
@@ -382,37 +433,68 @@ export default function PlanScreen() {
             {solutions.length === 0 && (
               <Text style={s.warnText}>No routes found. Try a wider time window.</Text>
             )}
-            {solutions.map((sol, idx) => (
-              <View key={idx} style={[s.solutionCard, sol.isUserPreferred && s.solutionCardPreferred]}>
-                <View style={s.solutionRow}>
-                  <Text style={s.solutionRank}>#{idx + 1}</Text>
-                  {sol.isUserPreferred && <Text style={s.preferredBadge}>Your start</Text>}
-                  {!sol.isComplete && <Text style={s.incompleteBadge}>Incomplete</Text>}
-                </View>
-                <Text style={s.solutionStart}>Start: {sol.startName}</Text>
-                <Text style={s.solutionTime}>{fmtDuration(sol.totalEstimatedSecs)} estimated</Text>
-                <Text style={s.solutionDetail}>
-                  {sol.legs.length} segment{sol.legs.length !== 1 ? 's' : ''}
-                  {sol.legs.filter((l) => l.repositionFromId !== null).length > 0
-                    ? ` · ${sol.legs.filter((l) => l.repositionFromId !== null).length} repositioning move${sol.legs.filter((l) => l.repositionFromId !== null).length !== 1 ? 's' : ''}`
-                    : ''}
-                </Text>
-                <Pressable style={s.scheduleBtn} onPress={() => startSchedule(sol)}>
-                  <Text style={s.scheduleBtnText}>Schedule This Route →</Text>
+            {solutions.map((sol, idx) => {
+              const endName = graphResult
+                ? (graphResult.stations.get(sol.legs[sol.legs.length - 1]?.edge.toId ?? '')?.name ?? '')
+                : '';
+              const repoCount = sol.legs.filter((l) => l.repositionFromId !== null).length;
+              const label = OPTION_LABELS[idx] ?? String(idx + 1);
+              return (
+                <Pressable
+                  key={idx}
+                  style={[s.forkCard, idx === 0 && s.forkCardBest]}
+                  onPress={() => startSchedule(sol)}
+                >
+                  {/* ── Card header ── */}
+                  <View style={s.forkCardTop}>
+                    <View style={s.forkLabelRow}>
+                      <Text style={s.forkOptionLabel}>Option {label}</Text>
+                      <View style={s.forkBadgesRow}>
+                        {idx === 0 && <Text style={s.forkBadgeBest}>★ Best</Text>}
+                        {sol.isUserPreferred && idx > 0 && <Text style={s.forkBadge}>Your start</Text>}
+                        {!sol.isComplete && <Text style={s.forkBadgeWarn}>Incomplete</Text>}
+                      </View>
+                    </View>
+                    <Text style={s.forkDuration}>{fmtDuration(sol.totalEstimatedSecs)}</Text>
+                    <Text style={s.forkRoute}>
+                      {sol.startName}{endName ? ` → ${endName}` : ''}
+                    </Text>
+                    <View style={s.forkStats}>
+                      <Text style={s.forkStat}>{sol.legs.length} leg{sol.legs.length !== 1 ? 's' : ''}</Text>
+                      {repoCount > 0 && (
+                        <Text style={s.forkStat}>
+                          {'  ·  '}{repoCount} {repoCount === 1 ? 'reposition' : 'repositions'}
+                        </Text>
+                      )}
+                      {graphResult && (
+                        <Text style={s.forkStat}>{'  ·  '}{graphResult.servedStationCount} stops</Text>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* ── Footer CTA ── */}
+                  <View style={s.forkFooter}>
+                    <Text style={s.forkFooterText}>Schedule This Route →</Text>
+                  </View>
                 </Pressable>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
         {/* Scheduled itinerary */}
-        {phase === 'scheduled' && scheduledRoute && (
+        {phase === 'scheduled' && scheduledRoute && itinPlan && (
           <View style={s.section}>
             <View style={s.solvedHeader}>
               <Text style={s.sectionLabel}>ITINERARY</Text>
-              <Pressable onPress={() => setPhase('solved')}>
-                <Text style={s.backLink}>← Routes</Text>
-              </Pressable>
+              <View style={s.itinHeaderRight}>
+                <Pressable onPress={() => setPhase('solved')}>
+                  <Text style={s.backLink}>← Routes</Text>
+                </Pressable>
+                <Pressable onPress={() => setShowMap(true)}>
+                  <Text style={s.backLink}>Map →</Text>
+                </Pressable>
+              </View>
             </View>
 
             <View style={s.itinerarySummary}>
@@ -429,45 +511,83 @@ export default function PlanScreen() {
               )}
             </View>
 
-            {mergeLegsForDisplay(scheduledRoute.legs).map((leg, idx) => (
-              <View key={idx} style={[s.legRow, leg.isImpossible && s.legRowImpossible]}>
-                {leg.type === 'reposition' ? (
-                  <>
-                    <Text style={s.legTime}>{leg.departureTime}</Text>
-                    <View style={s.legBody}>
-                      <Text style={s.legStation}>{leg.fromStationName}</Text>
-                      <Text style={s.legRoute}>↪ Reposition / walk (~{fmtDuration(
-                        (parseInt(leg.arrivalTime.split(':')[0], 10) * 3600 + parseInt(leg.arrivalTime.split(':')[1], 10) * 60) -
-                        (parseInt(leg.departureTime.split(':')[0], 10) * 3600 + parseInt(leg.departureTime.split(':')[1], 10) * 60)
-                      )})</Text>
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    <Text style={[s.legTime, leg.isImpossible && s.legTimeWarn]}>
-                      {leg.departureTime}
-                    </Text>
-                    <View style={s.legBody}>
-                      <Text style={s.legStation}>{leg.fromStationName}</Text>
-                      <Text style={s.legRoute}>
-                        {leg.isImpossible ? '⚠ No trip found · ' : ''}
-                        {leg.routeShortName ? `Line ${leg.routeShortName}` : 'Line ?'}
-                        {leg.tripHeadsign ? ` → ${leg.tripHeadsign}` : ''}
-                        {leg.intermediateCount > 0 ? ` (${leg.intermediateCount} stop${leg.intermediateCount !== 1 ? 's' : ''})` : ''}
+            {itinPlan.mergedLegs.map((leg, idx) => {
+              const legColor = itinPlan.legColors[idx];
+              return (
+                <View
+                  key={idx}
+                  style={[
+                    s.legRow,
+                    leg.isImpossible && s.legRowImpossible,
+                    leg.type !== 'transit' && s.legRowRepo,
+                    // Coloured left accent on coverage legs; transparent placeholder on
+                    // reposition legs keeps the time column aligned across both row types.
+                    legColor ? { borderLeftColor: legColor } : undefined,
+                  ]}
+                >
+                  {leg.type !== 'transit' ? (
+                    <>
+                      <Text style={s.legTime}>{leg.departureTime}</Text>
+                      <View style={s.legBody}>
+                        <Text style={s.legStation}>{leg.fromStationName}</Text>
+                        {leg.type === 'reposition-transit' ? (
+                          <>
+                            <Text style={s.legRoute}>
+                              ↩ {leg.routeShortName ? `Line ${leg.routeShortName}` : 'Transit'}
+                              {leg.tripHeadsign ? ` → ${leg.tripHeadsign}` : ''}
+                              {' · reposition'}
+                            </Text>
+                            <Text style={s.legArrStation}>
+                              <Text style={s.legArrTime}>{leg.arrivalTime} </Text>
+                              {leg.toStationName}
+                            </Text>
+                          </>
+                        ) : (
+                          <Text style={s.legRoute}>↪ Walk (~{fmtDuration(
+                            timeToSecs(leg.arrivalTime) - timeToSecs(leg.departureTime)
+                          )})</Text>
+                        )}
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={[s.legTime, leg.isImpossible && s.legTimeWarn]}>
+                        {leg.departureTime}
                       </Text>
-                      <Text style={s.legArrStation}>
-                        <Text style={s.legArrTime}>{leg.arrivalTime} </Text>
-                        {leg.toStationName}
-                      </Text>
-                    </View>
-                  </>
-                )}
-              </View>
-            ))}
+                      <View style={s.legBody}>
+                        <Text style={s.legStation}>{leg.fromStationName}</Text>
+                        <Text style={s.legRoute}>
+                          {leg.isImpossible ? '⚠ No trip found · ' : ''}
+                          {leg.routeShortName ? `Line ${leg.routeShortName}` : 'Line ?'}
+                          {leg.tripHeadsign ? ` → ${leg.tripHeadsign}` : ''}
+                          {leg.intermediateCount > 0 ? ` (${leg.intermediateCount} stop${leg.intermediateCount !== 1 ? 's' : ''})` : ''}
+                        </Text>
+                        <Text style={s.legArrStation}>
+                          <Text style={s.legArrTime}>{leg.arrivalTime} </Text>
+                          {leg.toStationName}
+                        </Text>
+                      </View>
+                    </>
+                  )}
+                </View>
+              );
+            })}
           </View>
         )}
 
       </ScrollView>
+
+      {itinPlan && graphResult && (
+        <RouteMap
+          visible={showMap}
+          onClose={() => setShowMap(false)}
+          mergedLegs={itinPlan.mergedLegs}
+          legColors={itinPlan.legColors}
+          stations={graphResult.stations}
+          db={db}
+          feedId={graphResult.config.feedId}
+        />
+      )}
     </View>
   );
 }
@@ -546,6 +666,7 @@ const base = StyleSheet.create({
   },
   ctaPrimaryText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   solvedHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  itinHeaderRight: { flexDirection: 'row', gap: 16, alignItems: 'center' },
   backLink: { fontSize: 14, fontWeight: '600' },
   solutionCard: { borderRadius: 14, padding: 16, marginBottom: 10, gap: 4 },
   solutionCardPreferred: {},
@@ -571,8 +692,13 @@ const base = StyleSheet.create({
   itinTime: { fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },
   itinDuration: { fontSize: 28, fontWeight: '800' },
   itinWarn: { fontSize: 13, marginTop: 4 },
-  legRow: { borderRadius: 12, padding: 12, marginBottom: 6, flexDirection: 'row', gap: 12 },
+  legRow: {
+    borderRadius: 12, padding: 12, paddingLeft: 16,
+    marginBottom: 6, flexDirection: 'row', gap: 12,
+    borderLeftWidth: 4, borderLeftColor: 'transparent',
+  },
   legRowImpossible: {},
+  legRowRepo: {},
   legTime: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'], width: 44 },
   legTimeWarn: {},
   legBody: { flex: 1, gap: 2 },
@@ -584,6 +710,22 @@ const base = StyleSheet.create({
   emptyIcon: { fontSize: 48 },
   emptyTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
   emptyBody: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  // ── Fork cards ──
+  forkCard: { borderRadius: 16, overflow: 'hidden', marginBottom: 12 },
+  forkCardBest: { borderWidth: 1.5 },
+  forkCardTop: { padding: 16 },
+  forkLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  forkBadgesRow: { flexDirection: 'row', gap: 6 },
+  forkOptionLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.7 },
+  forkBadgeBest: { fontSize: 10, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, overflow: 'hidden' },
+  forkBadge: { fontSize: 10, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, overflow: 'hidden' },
+  forkBadgeWarn: { fontSize: 10, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, overflow: 'hidden' },
+  forkDuration: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5, fontVariant: ['tabular-nums'], marginBottom: 2 },
+  forkRoute: { fontSize: 13, marginBottom: 8 },
+  forkStats: { flexDirection: 'row', flexWrap: 'wrap' },
+  forkStat: { fontSize: 12 },
+  forkFooter: { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 0.5, alignItems: 'flex-end' },
+  forkFooterText: { fontSize: 13, fontWeight: '700' },
 });
 
 const lightStyles = StyleSheet.create({
@@ -632,6 +774,7 @@ const lightStyles = StyleSheet.create({
   itinWarn: { ...base.itinWarn, color: '#7A5800' },
   legRow: { ...base.legRow, backgroundColor: '#FFFFFF' },
   legRowImpossible: { ...base.legRowImpossible, backgroundColor: '#FFF8E6' },
+  legRowRepo: { ...base.legRowRepo, backgroundColor: '#F2F1F6' },
   legTime: { ...base.legTime, color: '#1A56C4' },
   legTimeWarn: { ...base.legTimeWarn, color: '#7A5800' },
   legStation: { ...base.legStation, color: '#111018' },
@@ -640,6 +783,18 @@ const lightStyles = StyleSheet.create({
   legArrTime: { ...base.legArrTime, color: '#111018' },
   emptyTitle: { ...base.emptyTitle, color: '#111018' },
   emptyBody: { ...base.emptyBody, color: '#6B6880' },
+  // ── Fork cards ──
+  forkCard: { ...base.forkCard, backgroundColor: '#FFFFFF', borderWidth: 0.5, borderColor: '#E2E0EC' },
+  forkCardBest: { ...base.forkCardBest, borderColor: '#1A56C4' },
+  forkOptionLabel: { ...base.forkOptionLabel, color: '#938FA6' },
+  forkBadgeBest: { ...base.forkBadgeBest, backgroundColor: '#E6EEFF', color: '#1A56C4' },
+  forkBadge: { ...base.forkBadge, backgroundColor: '#F4F3F7', color: '#6B6880' },
+  forkBadgeWarn: { ...base.forkBadgeWarn, backgroundColor: '#FFF0CC', color: '#7A5800' },
+  forkDuration: { ...base.forkDuration, color: '#111018' },
+  forkRoute: { ...base.forkRoute, color: '#6B6880' },
+  forkStat: { ...base.forkStat, color: '#938FA6' },
+  forkFooter: { ...base.forkFooter, borderTopColor: '#F0EEF8' },
+  forkFooterText: { ...base.forkFooterText, color: '#1A56C4' },
 });
 
 const darkStyles = StyleSheet.create({
@@ -688,6 +843,7 @@ const darkStyles = StyleSheet.create({
   itinWarn: { ...base.itinWarn, color: '#E8C840' },
   legRow: { ...base.legRow, backgroundColor: '#191728' },
   legRowImpossible: { ...base.legRowImpossible, backgroundColor: '#1C1600' },
+  legRowRepo: { ...base.legRowRepo, backgroundColor: '#111020' },
   legTime: { ...base.legTime, color: '#4E80F0' },
   legTimeWarn: { ...base.legTimeWarn, color: '#E8C840' },
   legStation: { ...base.legStation, color: '#F0EFF8' },
@@ -696,4 +852,16 @@ const darkStyles = StyleSheet.create({
   legArrTime: { ...base.legArrTime, color: '#F0EFF8' },
   emptyTitle: { ...base.emptyTitle, color: '#F0EFF8' },
   emptyBody: { ...base.emptyBody, color: '#8A86A0' },
+  // ── Fork cards ──
+  forkCard: { ...base.forkCard, backgroundColor: '#191728', borderWidth: 0.5, borderColor: '#1E1C30' },
+  forkCardBest: { ...base.forkCardBest, borderColor: '#4E80F0' },
+  forkOptionLabel: { ...base.forkOptionLabel, color: '#524E62' },
+  forkBadgeBest: { ...base.forkBadgeBest, backgroundColor: '#0F1E3D', color: '#4E80F0' },
+  forkBadge: { ...base.forkBadge, backgroundColor: '#0D0C18', color: '#8A86A0' },
+  forkBadgeWarn: { ...base.forkBadgeWarn, backgroundColor: '#1C1600', color: '#E8C840' },
+  forkDuration: { ...base.forkDuration, color: '#F0EFF8' },
+  forkRoute: { ...base.forkRoute, color: '#8A86A0' },
+  forkStat: { ...base.forkStat, color: '#524E62' },
+  forkFooter: { ...base.forkFooter, borderTopColor: '#12111E' },
+  forkFooterText: { ...base.forkFooterText, color: '#4E80F0' },
 });

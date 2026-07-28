@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@maplibre/maplibre-react-native": "^11.3.6",
     "@react-native-community/datetimepicker": "^9.1.0",
     "drizzle-orm": "^1.0.0-rc.4",
     "expo": "~54.0.36",

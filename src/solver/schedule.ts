@@ -216,6 +216,16 @@ export async function schedule(
   let impossibleCount = 0;
   let currentTripId: string | null = null; // trip in progress from the previous transit leg
 
+  // Track which canonical (direction-agnostic) station pairs have been traversed.
+  // First traversal of a pair → 'transit'; any repeat → 'reposition-transit'.
+  const traversedEdges = new Set<string>();
+  const edgeType = (a: string, b: string): 'transit' | 'reposition-transit' => {
+    const key = [a, b].sort().join('\x1F');
+    if (traversedEdges.has(key)) return 'reposition-transit';
+    traversedEdges.add(key);
+    return 'transit';
+  };
+
   for (let li = 0; li < route.legs.length; li++) {
     const leg = route.legs[li];
     onProgress?.(`Leg ${li + 1} / ${route.legs.length}`);
@@ -245,7 +255,7 @@ export async function schedule(
           const depTime = secsToHHMM(curSecs);
           curSecs += walkSecs;
           legs.push({
-            type: 'reposition',
+            type: 'reposition-walk',
             fromStationId: hopFromId,
             fromStationName: hopFromSt?.name ?? hopFromId,
             toStationId: hopToId,
@@ -255,6 +265,7 @@ export async function schedule(
             arrivalTime: secsToHHMM(curSecs),
             routeShortName: null,
             tripHeadsign: null,
+            tripId: null,
             isImpossible: false,
             stayOnBoard: false,
           });
@@ -288,7 +299,7 @@ export async function schedule(
               arrSecs += 24 * 3600;
             }
             legs.push({
-              type: 'transit',
+              type: edgeType(hopFromId, hopToId),
               fromStationId: hopFromId,
               fromStationName: hopFromSt?.name ?? hopFromId,
               toStationId: hopToId,
@@ -298,6 +309,7 @@ export async function schedule(
               arrivalTime: secsToHHMM(arrSecs),
               routeShortName: trip.routeName,
               tripHeadsign: trip.headsign,
+              tripId: trip.tripId,
               isImpossible: false,
               stayOnBoard: false,
             });
@@ -315,7 +327,7 @@ export async function schedule(
             const depTime = secsToHHMM(curSecs);
             curSecs += walkSecs;
             legs.push({
-              type: 'reposition',
+              type: 'reposition-walk',
               fromStationId: hopFromId,
               fromStationName: hopFromSt?.name ?? hopFromId,
               toStationId: hopToId,
@@ -325,6 +337,7 @@ export async function schedule(
               arrivalTime: secsToHHMM(curSecs),
               routeShortName: null,
               tripHeadsign: null,
+              tripId: null,
               isImpossible: true,
               stayOnBoard: false,
             });
@@ -369,7 +382,7 @@ export async function schedule(
         arrSecs += 24 * 3600;
       }
       legs.push({
-        type: 'transit',
+        type: edgeType(leg.edge.fromId, leg.edge.toId),
         fromStationId: leg.edge.fromId,
         fromStationName: fromSt?.name ?? leg.edge.fromId,
         toStationId: leg.edge.toId,
@@ -379,6 +392,7 @@ export async function schedule(
         arrivalTime: secsToHHMM(arrSecs),
         routeShortName: trip.routeName,
         tripHeadsign: trip.headsign,
+        tripId: trip.tripId,
         isImpossible: false,
         stayOnBoard,
       });
@@ -394,7 +408,7 @@ export async function schedule(
       // No trip found — use median estimate and flag as impossible
       const estArr = curSecs + leg.edge.medianTravelSeconds;
       legs.push({
-        type: 'transit',
+        type: edgeType(leg.edge.fromId, leg.edge.toId),
         fromStationId: leg.edge.fromId,
         fromStationName: fromSt?.name ?? leg.edge.fromId,
         toStationId: leg.edge.toId,
@@ -404,6 +418,7 @@ export async function schedule(
         arrivalTime: secsToHHMM(estArr),
         routeShortName: null,
         tripHeadsign: null,
+        tripId: null,
         isImpossible: true,
         stayOnBoard: false,
       });
